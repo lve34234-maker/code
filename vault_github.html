@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>🔐 VAULT - 파일 보관소</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--s1:#13131a;--s2:#1c1c26;--s3:#22222e;--ac:#4f8ef7;--ac2:#7c5af7;--tx:#e8e8f0;--mu:#6b6b80;--err:#f74f4f;--ok:#4ff7a0;--warn:#f7c94f;--br:#2a2a3a}
+html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Noto Sans KR',sans-serif}
+.hidden{display:none!important}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ── SETUP ── */
+.setup-wrap{display:flex;align-items:flex-start;justify-content:center;min-height:100vh;padding:2rem 1rem;overflow-y:auto}
+.setup-box{background:var(--s1);border:1px solid var(--br);border-radius:16px;padding:2rem;width:100%;max-width:500px;margin:auto}
+.setup-head{text-align:center;margin-bottom:2rem}
+.setup-head .ico{font-size:3rem;display:block;margin-bottom:.5rem}
+.setup-head h1{font-size:1.3rem;font-weight:700}
+.setup-head p{font-size:.8rem;color:var(--mu);margin-top:.3rem}
+
+.step{background:var(--s2);border:1px solid var(--br);border-radius:12px;padding:1rem 1.1rem;margin-bottom:.8rem}
+.step-title{display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem}
+.step-num{background:var(--ac);color:#fff;font-size:.7rem;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-title strong{font-size:.92rem}
+.step-body{font-size:.82rem;color:var(--mu);line-height:1.8;padding-left:1.9rem}
+.step-body b{color:var(--tx)}
+.step-body a{color:var(--ac);text-decoration:none}
+.step-body a:hover{text-decoration:underline}
+.step-body code{font-family:'JetBrains Mono',monospace;background:var(--bg);padding:.1rem .4rem;border-radius:4px;font-size:.75rem;color:var(--ok)}
+.tip{background:rgba(79,247,160,.06);border:1px solid rgba(79,247,160,.2);border-radius:8px;padding:.6rem .85rem;font-size:.78rem;color:var(--ok);margin-top:.5rem;line-height:1.6}
+.tip b{font-weight:700}
+
+.input-group{padding-left:0;margin-top:.75rem}
+.fld{margin-bottom:.6rem}
+.fld label{display:block;font-size:.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem}
+.fld input{width:100%;background:var(--bg);border:1px solid var(--br);border-radius:8px;padding:.6rem .85rem;color:var(--tx);font-size:.82rem;font-family:'JetBrains Mono',monospace;outline:none;transition:border .2s}
+.fld input:focus{border-color:var(--ac)}
+.fld input::placeholder{color:var(--mu)}
+
+.maxmb-row{display:flex;align-items:center;gap:.75rem;margin-top:.5rem}
+.maxmb-row input{width:90px}
+.maxmb-row span{font-size:.82rem;color:var(--mu)}
+
+.btn-save{width:100%;background:var(--ac);border:none;border-radius:10px;padding:.75rem;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:1rem;transition:opacity .2s}
+.btn-save:hover{opacity:.85}
+.setup-err{color:var(--err);font-size:.8rem;text-align:center;margin-top:.6rem;min-height:1rem}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem}
+.login-box{background:var(--s1);border:1px solid var(--br);border-radius:16px;padding:2.5rem;width:100%;max-width:360px}
+.login-logo{text-align:center;margin-bottom:2rem}
+.login-logo .ico{font-size:3rem;display:block;margin-bottom:.5rem}
+.login-logo h1{font-size:1.5rem;font-weight:700}
+.login-logo p{font-size:.72rem;color:var(--mu);margin-top:.25rem;font-family:'JetBrains Mono',monospace}
+.tabs{display:flex;background:var(--s2);border-radius:8px;padding:.25rem;margin-bottom:1.5rem;gap:.25rem}
+.tab{flex:1;padding:.45rem;text-align:center;font-size:.82rem;border-radius:6px;cursor:pointer;color:var(--mu);transition:all .2s;border:none;background:transparent}
+.tab.on{background:var(--s3);color:var(--tx);font-weight:700}
+.lf{margin-bottom:.9rem}
+.lf label{display:block;font-size:.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem}
+.lf input{width:100%;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:.65rem 1rem;color:var(--tx);font-size:.9rem;outline:none;transition:border .2s}
+.lf input:focus{border-color:var(--ac)}
+.btn-login{width:100%;background:var(--ac);border:none;border-radius:8px;padding:.75rem;color:#fff;font-size:.92rem;font-weight:700;cursor:pointer;margin-top:.25rem;transition:opacity .2s}
+.btn-login:hover{opacity:.85}
+.lerr{color:var(--err);font-size:.8rem;text-align:center;margin-top:.6rem;min-height:1.1rem}
+.cfg-hint{text-align:center;margin-top:1rem;font-size:.75rem;color:var(--mu)}
+.cfg-hint a{color:var(--ac);cursor:pointer}
+
+/* ── APP ── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--s1);border-bottom:1px solid var(--br);padding:.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tb-left{display:flex;align-items:center;gap:.7rem}
+.tb-logo{font-size:.95rem;font-weight:700}
+.tb-user{font-size:.7rem;color:var(--mu);font-family:'JetBrains Mono',monospace;background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:.2rem .75rem}
+.badge{display:inline-block;font-size:.58rem;padding:.1rem .35rem;border-radius:4px;font-family:'JetBrains Mono',monospace;margin-left:.3rem}
+.badge.admin{background:rgba(124,90,247,.2);color:var(--ac2);border:1px solid rgba(124,90,247,.3)}
+.badge.user{background:rgba(79,142,247,.15);color:var(--ac);border:1px solid rgba(79,142,247,.25)}
+.tb-right{display:flex;gap:.4rem}
+.tbtn{background:transparent;border:1px solid var(--br);border-radius:6px;padding:.28rem .65rem;color:var(--mu);font-size:.72rem;cursor:pointer;transition:all .2s}
+.tbtn:hover{border-color:var(--ac);color:var(--ac)}
+.tbtn.danger:hover{border-color:var(--err);color:var(--err)}
+
+.main{padding:1.25rem 1.5rem;max-width:1000px;width:100%;margin:0 auto}
+.plan-bar{background:rgba(79,247,160,.05);border:1px solid rgba(79,247,160,.2);border-radius:10px;padding:.65rem 1rem;margin-bottom:1.25rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.plan-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:1.25rem}
+@media(max-width:500px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:.7rem 1rem}
+.stat-lbl{font-size:.65rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem}
+.stat-val{font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace}
+.c-bl{color:var(--ac)}.c-gr{color:var(--ok)}.c-pu{color:var(--ac2)}
+
+.upload-zone{background:var(--s1);border:2px dashed var(--br);border-radius:12px;padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1.25rem;position:relative}
+.upload-zone:hover,.upload-zone.over{border-color:var(--ac);background:rgba(79,142,247,.05)}
+.upload-zone .up-ico{font-size:2.2rem;display:block;margin-bottom:.6rem}
+.upload-zone h3{font-size:.92rem;font-weight:500;margin-bottom:.2rem}
+.upload-zone p{font-size:.78rem;color:var(--mu)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+.prog-area{background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:1rem;margin-bottom:1.25rem}
+.prog-item{margin-bottom:.5rem}
+.prog-item:last-child{margin-bottom:0}
+.prog-header{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;margin-bottom:.3rem}
+.prog-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%}
+.prog-pct{color:var(--ac);font-family:'JetBrains Mono',monospace;font-size:.72rem}
+.pbar{height:4px;background:var(--br);border-radius:2px;overflow:hidden}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:2px;transition:width .3s}
+
+.filter-row{display:flex;gap:.6rem;margin-bottom:.9rem;flex-wrap:wrap}
+.filter-row input{flex:1;min-width:180px;background:var(--s1);border:1px solid var(--br);border-radius:8px;padding:.5rem .85rem;color:var(--tx);font-size:.83rem;outline:none;transition:border .2s}
+.filter-row input:focus{border-color:var(--ac)}
+.filter-row input::placeholder{color:var(--mu)}
+.fsel{background:var(--s1);border:1px solid var(--br);border-radius:8px;padding:.5rem .75rem;color:var(--tx);font-size:.8rem;outline:none;cursor:pointer}
+
+.sec-title{font-size:.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.7rem;display:flex;align-items:center;gap:.5rem}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--br)}
+
+.file-list{display:flex;flex-direction:column;gap:.4rem}
+.file-item{background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:.7rem 1rem;display:flex;align-items:center;gap:.9rem;transition:border .2s}
+.file-item:hover{border-color:rgba(79,142,247,.35)}
+.file-ico{width:38px;height:38px;border-radius:8px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.file-meta{flex:1;min-width:0}
+.file-name{font-size:.88rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-sub{font-size:.7rem;color:var(--mu);margin-top:.15rem;font-family:'JetBrains Mono',monospace}
+.file-actions{display:flex;gap:.35rem;flex-shrink:0}
+.ico-btn{background:transparent;border:1px solid var(--br);border-radius:6px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:.88rem;color:var(--mu)}
+.ico-btn:hover{border-color:var(--ac);color:var(--ac)}
+.ico-btn.del:hover{border-color:var(--err);color:var(--err)}
+.up-tag{display:inline-block;font-size:.62rem;padding:.08rem .35rem;border-radius:4px;background:rgba(79,142,247,.12);color:var(--ac);border:1px solid rgba(79,142,247,.2);margin-left:.35rem;font-family:'JetBrains Mono',monospace;vertical-align:middle}
+
+.empty{text-align:center;padding:3rem 1rem;color:var(--mu)}
+.empty .e-ico{font-size:2.5rem;display:block;margin-bottom:.75rem;opacity:.35}
+.loading{display:flex;align-items:center;justify-content:center;padding:3rem;gap:.6rem;color:var(--mu);font-size:.85rem}
+.spin{width:18px;height:18px;border:2px solid var(--br);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{position:fixed;bottom:1.25rem;right:1.25rem;background:var(--s2);border:1px solid var(--br);border-radius:10px;padding:.6rem 1rem;font-size:.8rem;z-index:9999;transform:translateY(10px);opacity:0;transition:all .25s;pointer-events:none;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(79,247,160,.4);color:var(--ok)}
+.toast.err{border-color:rgba(247,79,79,.4);color:var(--err)}
+.toast.warn{border-color:rgba(247,201,79,.4);color:var(--warn)}
+.toast.info{border-color:rgba(79,142,247,.4);color:var(--ac)}
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP ══ -->
+<div id="setupScreen" style="display:flex;align-items:flex-start;justify-content:center;min-height:100vh;padding:2rem 1rem">
+  <div class="setup-box">
+    <div class="setup-head">
+      <span class="ico">🔐</span>
+      <h1>VAULT 처음 설정</h1>
+      <p>GitHub만 있으면 돼요 · 카드 없음 · 완전 무료</p>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-title">
+        <span class="step-num">1</span>
+        <strong>GitHub 레포 만들기</strong>
+      </div>
+      <div class="step-body">
+        아래 버튼 눌러서 GitHub 이동<br>
+        → <b>New repository</b> 클릭<br>
+        → 이름 아무거나 입력 (예: <code>my-vault</code>)<br>
+        → <b>Public</b> 선택 → <b>Create repository</b>
+        <div style="margin-top:.6rem">
+          <a href="https://github.com/new" target="_blank"
+            style="display:inline-block;background:var(--ac);color:#fff;text-decoration:none;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:7px">
+            🔗 GitHub 레포 만들기
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-title">
+        <span class="step-num">2</span>
+        <strong>토큰 발급받기 (비밀번호 같은 것)</strong>
+      </div>
+      <div class="step-body">
+        아래 버튼 → GitHub Settings 열림<br>
+        → 오른쪽 아래 <b>Generate new token</b> 클릭<br>
+        → <b>Generate new token (classic)</b> 선택<br>
+        → Note에 아무 이름 입력 (예: <code>vault</code>)<br>
+        → <b>repo</b> 체크박스 클릭 ✅<br>
+        → 맨 아래 <b>Generate token</b> 클릭<br>
+        → 나온 토큰 <b>복사해두기!</b> (다시 못 봐요)
+        <div style="margin-top:.6rem">
+          <a href="https://github.com/settings/tokens/new" target="_blank"
+            style="display:inline-block;background:var(--ac);color:#fff;text-decoration:none;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:7px">
+            🔗 토큰 발급 페이지
+          </a>
+        </div>
+        <div class="tip">💡 토큰은 <b>ghp_</b> 로 시작해요. 메모장에 붙여놓으세요!</div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" style="border-color:var(--ac)">
+      <div class="step-title">
+        <span class="step-num">3</span>
+        <strong>아래에 입력하기</strong>
+      </div>
+      <div class="input-group">
+        <div class="fld">
+          <label>GitHub 아이디</label>
+          <input id="cfgOwner" placeholder="예: lve34234-maker" autocomplete="off"/>
+        </div>
+        <div class="fld">
+          <label>레포 이름</label>
+          <input id="cfgRepo" placeholder="예: my-vault" autocomplete="off"/>
+        </div>
+        <div class="fld">
+          <label>토큰 (ghp_로 시작하는 것)</label>
+          <input id="cfgToken" type="password" placeholder="ghp_xxxxxxxxxxxx"/>
+        </div>
+        <div style="margin-top:.5rem">
+          <label style="font-size:.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:.3rem">파일 1개당 최대 크기</label>
+          <div class="maxmb-row">
+            <input class="fld" id="cfgMaxMb" type="number" value="500" min="1" max="2000" style="width:90px;margin:0"/>
+            <span>MB · GitHub 최대 2GB까지 가능</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-save" id="cfgSaveBtn">✅ 저장하고 시작하기</button>
+    <div class="setup-err" id="cfgErr"></div>
+  </div>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen" style="display:none;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem">
+  <div style="width:100%;max-width:360px">
+    <div class="login-box">
+      <div class="login-logo">
+        <span class="ico">🔐</span>
+        <h1>VAULT</h1>
+        <p class="mono">FILE STORAGE SYSTEM</p>
+      </div>
+      <div class="tabs">
+        <button class="tab on" id="tabLogin" onclick="switchTab('login')">로그인</button>
+        <button class="tab" id="tabReg" onclick="switchTab('reg')">회원가입</button>
+      </div>
+      <div id="formLogin">
+        <div class="lf"><label>아이디</label><input id="lid" placeholder="아이디" autocomplete="off"/></div>
+        <div class="lf"><label>비밀번호</label><input id="lpw" type="password" placeholder="비밀번호"/></div>
+        <button class="btn-login" id="loginBtn">로그인</button>
+      </div>
+      <div id="formReg" class="hidden">
+        <div class="lf"><label>아이디</label><input id="rid" placeholder="영문+숫자" autocomplete="off"/></div>
+        <div class="lf"><label>닉네임</label><input id="rnick" placeholder="표시 이름"/></div>
+        <div class="lf"><label>비밀번호</label><input id="rpw" type="password" placeholder="6자 이상"/></div>
+        <div class="lf"><label>비밀번호 확인</label><input id="rpw2" type="password" placeholder="한 번 더"/></div>
+        <button class="btn-login" id="regBtn">가입하기</button>
+      </div>
+      <div class="lerr" id="lerr"></div>
+    </div>
+    <div class="cfg-hint"><a onclick="showSetup()">⚙️ GitHub 설정 변경</a></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="appScreen" style="display:none;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div class="tb-left">
+      <span style="font-size:1.3rem">🔐</span>
+      <span class="tb-logo">VAULT</span>
+      <span class="tb-user" id="tbUser"></span>
+    </div>
+    <div class="tb-right">
+      <button class="tbtn" onclick="loadFiles()">↺ 새로고침</button>
+      <button class="tbtn danger" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="plan-bar">
+      <span class="plan-dot"></span>
+      GitHub Releases 저장 · 파일당 최대 <strong id="planMaxLbl" style="margin:0 .2rem">-</strong> · 완전 무료 · 카드 없음 ✅
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-lbl">전체 파일</div><div class="stat-val c-bl" id="statTotal">-</div></div>
+      <div class="stat"><div class="stat-lbl">전체 용량</div><div class="stat-val c-gr" id="statSize">-</div></div>
+      <div class="stat"><div class="stat-lbl">내 파일</div><div class="stat-val c-pu" id="statMine">-</div></div>
+    </div>
+
+    <div class="upload-zone" id="dropzone">
+      <span class="up-ico">⬆️</span>
+      <h3>파일 드래그 또는 클릭해서 업로드</h3>
+      <p>모든 파일 형식 지원 · 최대 <span id="maxLbl">-</span></p>
+      <input type="file" id="fileInput" multiple/>
+    </div>
+    <div id="progArea" class="prog-area hidden"></div>
+
+    <div class="filter-row">
+      <input id="searchBox" placeholder="🔍  파일명 검색..." oninput="renderFiles()"/>
+      <select class="fsel" id="filterWho" onchange="renderFiles()">
+        <option value="all">👑 전체 파일</option>
+        <option value="mine">내 파일만</option>
+      </select>
+      <select class="fsel" id="filterSort" onchange="renderFiles()">
+        <option value="new">최신순</option>
+        <option value="old">오래된순</option>
+        <option value="big">용량 큰 순</option>
+        <option value="name">이름순</option>
+      </select>
+    </div>
+    <div class="sec-title" id="secTitle">파일 목록</div>
+    <div class="file-list" id="fileList">
+      <div class="loading"><div class="spin"></div> 불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const ADMINS = ['dlgustjr','admin'];
+const ADMIN_PW = {dlgustjr:'dlgustjr!@34', admin:'admin!@34'};
+const CFG_KEY = 'vault_gh_cfg';
+const USERS_KEY = 'vault_gh_users';
+const RELEASE_TAG = 'vault-storage';
+
+let cfg = null;
+let curUser = null;
+let allAssets = []; // {id, name, size, download_url, uploader, nick, label}
+
+function loadCfg(){ try{ return JSON.parse(localStorage.getItem(CFG_KEY)); }catch(e){ return null; } }
+function saveCfg(c){ localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
+function loadUsers(){ try{ return JSON.parse(localStorage.getItem(USERS_KEY))||{}; }catch(e){ return {}; } }
+function saveUsers(u){ localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function toast(msg, type='ok'){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+type;
+  void t.offsetWidth; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+function fmt(b){
+  if(b==null||b===undefined) return '-';
+  if(b<1024) return b+'B';
+  if(b<1048576) return (b/1024).toFixed(1)+'KB';
+  if(b<1073741824) return (b/1048576).toFixed(1)+'MB';
+  return (b/1073741824).toFixed(2)+'GB';
+}
+function fmtDate(s){ return new Date(s).toLocaleString('ko-KR',{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function fileIcon(name){
+  const e=(name||'').split('.').pop().toLowerCase();
+  const m={pdf:'📄',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',gif:'🖼️',webp:'🖼️',svg:'🖼️',bmp:'🖼️',
+    mp4:'🎬',mov:'🎬',avi:'🎬',mkv:'🎬',wmv:'🎬',webm:'🎬',
+    mp3:'🎵',wav:'🎵',ogg:'🎵',flac:'🎵',aac:'🎵',m4a:'🎵',
+    zip:'📦',rar:'📦','7z':'📦',tar:'📦',gz:'📦',
+    js:'💻',ts:'💻',py:'💻',html:'💻',css:'💻',java:'💻',cpp:'💻',c:'💻',go:'💻',rs:'💻',php:'💻',
+    doc:'📝',docx:'📝',txt:'📃',md:'📃',
+    xls:'📊',xlsx:'📊',csv:'📊',
+    ppt:'📽️',pptx:'📽️',
+    exe:'⚙️',dmg:'⚙️',iso:'💿',json:'🗂️',xml:'🗂️',sql:'🗄️',apk:'📱'};
+  return m[e]||'📁';
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function sha256(s){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function ghHeaders(){
+  return {'Authorization':'token '+cfg.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+}
+function apiBase(){ return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}`; }
+
+// ══════════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════════
+function showSetup(){
+  const c = loadCfg()||{};
+  document.getElementById('cfgOwner').value = c.owner||'';
+  document.getElementById('cfgRepo').value = c.repo||'';
+  document.getElementById('cfgToken').value = c.token||'';
+  document.getElementById('cfgMaxMb').value = c.maxMb||500;
+  document.getElementById('setupScreen').style.display = 'flex';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'none';
+}
+
+document.getElementById('cfgSaveBtn').onclick = async function(){
+  const owner = document.getElementById('cfgOwner').value.trim();
+  const repo  = document.getElementById('cfgRepo').value.trim();
+  const token = document.getElementById('cfgToken').value.trim();
+  const maxMb = parseInt(document.getElementById('cfgMaxMb').value)||500;
+  const errEl = document.getElementById('cfgErr');
+  errEl.textContent='';
+  if(!owner||!repo||!token){ errEl.textContent='❌ 아이디, 레포 이름, 토큰 모두 입력해주세요!'; return; }
+  if(!token.startsWith('ghp_')&&!token.startsWith('github_pat_')){ errEl.textContent='❌ 토큰이 올바르지 않아요. ghp_ 로 시작해야 해요.'; return; }
+  this.textContent='확인 중...'; this.disabled=true;
+  // Test API
+  try{
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github+json'}});
+    if(!r.ok){ const d=await r.json(); errEl.textContent='❌ '+( d.message==='Not Found'?'레포를 찾을 수 없어요. 아이디/레포 이름 확인해주세요.': d.message); this.textContent='✅ 저장하고 시작하기'; this.disabled=false; return; }
+  }catch(e){ errEl.textContent='❌ 연결 실패: '+e.message; this.textContent='✅ 저장하고 시작하기'; this.disabled=false; return; }
+  cfg = {owner, repo, token, maxMb};
+  saveCfg(cfg);
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  this.textContent='✅ 저장하고 시작하기'; this.disabled=false;
+  toast('연결 성공! 🎉');
+};
+
+// ══════════════════════════════════════════
+// RELEASE MANAGEMENT
+// ══════════════════════════════════════════
+let releaseId = null;
+
+async function getOrCreateRelease(){
+  // Try get existing
+  const r = await fetch(`${apiBase()}/releases/tags/${RELEASE_TAG}`,{headers:ghHeaders()});
+  if(r.ok){ const d=await r.json(); releaseId=d.id; return d.id; }
+  // Create new
+  const r2 = await fetch(`${apiBase()}/releases`,{method:'POST',headers:{...ghHeaders(),'Content-Type':'application/json'},
+    body:JSON.stringify({tag_name:RELEASE_TAG, name:'Vault Storage', body:'파일 보관소 저장 공간', draft:false, prerelease:false})});
+  const d2 = await r2.json();
+  if(!r2.ok) throw new Error(d2.message);
+  releaseId = d2.id; return d2.id;
+}
+
+async function fetchAllAssets(){
+  // Get all releases and their assets
+  const r = await fetch(`${apiBase()}/releases`,{headers:ghHeaders()});
+  if(!r.ok) throw new Error('릴리즈를 불러올 수 없어요');
+  const releases = await r.json();
+  const vault = releases.find(x=>x.tag_name===RELEASE_TAG);
+  if(!vault) return [];
+  releaseId = vault.id;
+  const r2 = await fetch(`${apiBase()}/releases/${vault.id}/assets?per_page=100`,{headers:ghHeaders()});
+  if(!r2.ok) return [];
+  const assets = await r2.json();
+  // Parse uploader/nick from label field: "uploader:nick"
+  return assets.map(a=>{
+    const parts = (a.label||'').split('|');
+    return {id:a.id, name:a.name, size:a.size, url:a.browser_download_url, uploader:parts[0]||'?', nick:parts[1]||parts[0]||'?', date:a.created_at};
+  });
+}
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function switchTab(t){
+  document.getElementById('tabLogin').classList.toggle('on',t==='login');
+  document.getElementById('tabReg').classList.toggle('on',t==='reg');
+  document.getElementById('formLogin').classList.toggle('hidden',t!=='login');
+  document.getElementById('formReg').classList.toggle('hidden',t!=='reg');
+  document.getElementById('lerr').textContent='';
+}
+
+document.getElementById('loginBtn').onclick = doLogin;
+document.getElementById('regBtn').onclick = doRegister;
+['lid','lpw'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}));
+
+async function doLogin(){
+  const id = document.getElementById('lid').value.trim();
+  const pw = document.getElementById('lpw').value;
+  const errEl = document.getElementById('lerr');
+  errEl.textContent='';
+  if(!id||!pw){ errEl.textContent='아이디와 비밀번호를 입력해주세요'; return; }
+  if(ADMIN_PW[id]!==undefined){
+    if(pw!==ADMIN_PW[id]){ errEl.textContent='비밀번호가 틀렸어요'; return; }
+    curUser={id,nick:id,role:'admin'}; enterApp(); return;
+  }
+  const users = loadUsers();
+  if(!users[id]){ errEl.textContent='존재하지 않는 아이디예요'; return; }
+  const hash = await sha256(pw);
+  if(users[id].pwHash!==hash){ errEl.textContent='비밀번호가 틀렸어요'; return; }
+  curUser={id,nick:users[id].nick,role:'user'}; enterApp();
+}
+
+async function doRegister(){
+  const id=document.getElementById('rid').value.trim();
+  const nick=document.getElementById('rnick').value.trim();
+  const pw=document.getElementById('rpw').value;
+  const pw2=document.getElementById('rpw2').value;
+  const errEl=document.getElementById('lerr');
+  errEl.textContent='';
+  if(!id||!nick||!pw){ errEl.textContent='모두 입력해주세요'; return; }
+  if(!/^[a-zA-Z0-9_]{2,20}$/.test(id)){ errEl.textContent='아이디는 영문+숫자+_ 2~20자'; return; }
+  if(pw.length<6){ errEl.textContent='비밀번호 6자 이상'; return; }
+  if(pw!==pw2){ errEl.textContent='비밀번호가 일치하지 않아요'; return; }
+  if(ADMIN_PW[id]!==undefined){ errEl.textContent='이미 사용 중인 아이디예요'; return; }
+  const users=loadUsers();
+  if(users[id]){ errEl.textContent='이미 사용 중인 아이디예요'; return; }
+  const hash=await sha256(pw);
+  users[id]={nick,pwHash:hash}; saveUsers(users);
+  toast('가입 완료! 로그인해주세요 🎉'); switchTab('login');
+  document.getElementById('lid').value=id;
+}
+
+function doLogout(){
+  curUser=null; allAssets=[];
+  document.getElementById('appScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('lid').value=''; document.getElementById('lpw').value='';
+}
+
+// ══════════════════════════════════════════
+// APP
+// ══════════════════════════════════════════
+function enterApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appScreen').style.display='flex';
+  const admin=curUser.role==='admin';
+  document.getElementById('tbUser').innerHTML=`<span class="mono">${curUser.id}</span><span class="badge ${admin?'admin':'user'}">${admin?'ADMIN':'USER'}</span>`;
+  document.getElementById('planMaxLbl').textContent=fmt((cfg.maxMb||500)*1024*1024);
+  document.getElementById('maxLbl').textContent=fmt((cfg.maxMb||500)*1024*1024);
+  if(!admin){ document.getElementById('filterWho').innerHTML='<option value="mine">내 파일</option>'; }
+  else { document.getElementById('filterWho').innerHTML='<option value="all">👑 전체 파일</option><option value="mine">내 파일만</option>'; }
+  loadFiles();
+  setupUpload();
+}
+
+async function loadFiles(){
+  document.getElementById('fileList').innerHTML='<div class="loading"><div class="spin"></div> 불러오는 중...</div>';
+  try{
+    allAssets = await fetchAllAssets();
+    updateStats(); renderFiles();
+  }catch(e){
+    document.getElementById('fileList').innerHTML=`<div class="empty"><span class="e-ico">⚠️</span><p>불러오기 실패: ${esc(e.message)}</p></div>`;
+  }
+}
+
+function updateStats(){
+  const mine=allAssets.filter(a=>a.uploader===curUser.id);
+  document.getElementById('statTotal').textContent=allAssets.length;
+  document.getElementById('statSize').textContent=fmt(allAssets.reduce((s,a)=>s+a.size,0));
+  document.getElementById('statMine').textContent=mine.length;
+}
+
+function renderFiles(){
+  const search=(document.getElementById('searchBox').value||'').toLowerCase();
+  const who=document.getElementById('filterWho').value;
+  const sort=document.getElementById('filterSort').value;
+  const admin=curUser.role==='admin';
+  let list=allAssets.filter(a=>{
+    if(who==='mine'&&a.uploader!==curUser.id) return false;
+    if(!admin&&a.uploader!==curUser.id) return false;
+    if(search&&!a.name.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  if(sort==='new') list.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  else if(sort==='old') list.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  else if(sort==='big') list.sort((a,b)=>b.size-a.size);
+  else if(sort==='name') list.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+  document.getElementById('secTitle').textContent=`파일 목록 (${list.length})`;
+  if(!list.length){ document.getElementById('fileList').innerHTML='<div class="empty"><span class="e-ico">📭</span><p>파일이 없어요</p></div>'; return; }
+  const canDel=a=>admin||a.uploader===curUser.id;
+  document.getElementById('fileList').innerHTML=list.map(a=>`
+    <div class="file-item" id="fi_${a.id}">
+      <div class="file-ico">${fileIcon(a.name)}</div>
+      <div class="file-meta">
+        <div class="file-name">${esc(a.name)}${admin&&a.uploader!==curUser.id?`<span class="up-tag">${esc(a.nick)}</span>`:''}</div>
+        <div class="file-sub">${fmt(a.size)} · ${fmtDate(a.date)} · ${esc(a.nick)}</div>
+      </div>
+      <div class="file-actions">
+        <button class="ico-btn" onclick="downloadFile(${a.id})" title="다운로드">⬇️</button>
+        ${canDel(a)?`<button class="ico-btn del" onclick="deleteFile(${a.id})" title="삭제">🗑️</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// DOWNLOAD
+// ══════════════════════════════════════════
+function downloadFile(aid){
+  const a=allAssets.find(x=>x.id===aid);
+  if(!a){ toast('파일을 찾을 수 없어요','err'); return; }
+  // For public repos: direct link works
+  const el=document.createElement('a');
+  el.href=a.url; el.download=a.name; el.target='_blank'; el.rel='noopener noreferrer';
+  document.body.appendChild(el); el.click(); document.body.removeChild(el);
+  toast(`${a.name} 다운로드 시작! ⬇️`);
+}
+
+// ══════════════════════════════════════════
+// DELETE
+// ══════════════════════════════════════════
+async function deleteFile(aid){
+  const a=allAssets.find(x=>x.id===aid);
+  if(!a) return;
+  if(!confirm(`"${a.name}" 을 삭제할까요?`)) return;
+  try{
+    const r=await fetch(`${apiBase()}/releases/assets/${aid}`,{method:'DELETE',headers:ghHeaders()});
+    if(!r.ok&&r.status!==204) throw new Error('삭제 실패');
+    allAssets=allAssets.filter(x=>x.id!==aid);
+    const el=document.getElementById('fi_'+aid);
+    if(el){ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }
+    updateStats(); renderFiles();
+    toast('삭제 완료 🗑️','warn');
+  }catch(e){ toast('삭제 실패: '+e.message,'err'); }
+}
+
+// ══════════════════════════════════════════
+// UPLOAD
+// ══════════════════════════════════════════
+function setupUpload(){
+  const fi=document.getElementById('fileInput');
+  const dz=document.getElementById('dropzone');
+  fi.onchange=e=>{ if(e.target.files.length) handleFiles(Array.from(e.target.files)); fi.value=''; };
+  dz.ondragover=e=>{ e.preventDefault(); dz.classList.add('over'); };
+  dz.ondragleave=()=>dz.classList.remove('over');
+  dz.ondrop=e=>{ e.preventDefault(); dz.classList.remove('over'); if(e.dataTransfer.files.length) handleFiles(Array.from(e.dataTransfer.files)); };
+}
+
+async function handleFiles(files){
+  const maxBytes=(cfg.maxMb||500)*1024*1024;
+  const toUp=[];
+  for(const f of files){
+    if(f.size>maxBytes){ toast(`${f.name}: 최대 크기 초과!`,'err'); continue; }
+    toUp.push(f);
+  }
+  if(!toUp.length) return;
+
+  // Ensure release exists
+  try{ await getOrCreateRelease(); }
+  catch(e){ toast('릴리즈 생성 실패: '+e.message,'err'); return; }
+
+  const area=document.getElementById('progArea');
+  area.classList.remove('hidden');
+  const tasks=toUp.map(f=>({file:f,pct:0,done:false,err:null}));
+
+  function renderProg(){
+    area.innerHTML=tasks.map((t,i)=>`
+      <div class="prog-item">
+        <div class="prog-header"><span class="prog-name">${esc(t.file.name)}</span><span class="prog-pct">${t.done?'✓':t.err?'✗':t.pct+'%'}</span></div>
+        <div class="pbar"><div class="pbar-fill" style="width:${t.done?100:t.pct}%"></div></div>
+      </div>`).join('');
+  }
+  renderProg();
+
+  let ok=0;
+  for(let i=0;i<tasks.length;i++){
+    const t=tasks[i];
+    try{
+      // GitHub upload API
+      const url=`https://uploads.github.com/repos/${cfg.owner}/${cfg.repo}/releases/${releaseId}/assets?name=${encodeURIComponent(t.file.name)}&label=${encodeURIComponent(curUser.id+'|'+curUser.nick)}`;
+      // Use XHR for progress
+      await new Promise((res,rej)=>{
+        const xhr=new XMLHttpRequest();
+        xhr.open('POST',url);
+        xhr.setRequestHeader('Authorization','token '+cfg.token);
+        xhr.setRequestHeader('Content-Type', t.file.type||'application/octet-stream');
+        xhr.setRequestHeader('Accept','application/vnd.github+json');
+        xhr.upload.onprogress=e=>{ if(e.lengthComputable){ t.pct=Math.round(e.loaded/e.total*100); renderProg(); }};
+        xhr.onload=()=>{
+          if(xhr.status===201){
+            const d=JSON.parse(xhr.responseText);
+            const parts=(d.label||'').split('|');
+            allAssets.unshift({id:d.id,name:d.name,size:d.size,url:d.browser_download_url,uploader:parts[0]||curUser.id,nick:parts[1]||curUser.nick,date:d.created_at});
+            t.done=true; ok++; renderProg(); updateStats(); renderFiles(); res();
+          } else { t.err=xhr.status; renderProg(); rej(new Error('HTTP '+xhr.status)); }
+        };
+        xhr.onerror=()=>{ t.err='네트워크 오류'; renderProg(); rej(new Error('네트워크 오류')); };
+        xhr.send(t.file);
+      });
+    }catch(e){ toast(`${t.file.name} 업로드 실패: ${e.message}`,'err'); }
+  }
+  setTimeout(()=>{ area.classList.add('hidden'); area.innerHTML=''; },2000);
+  if(ok>0) toast(`${ok}개 업로드 완료! 🎉`);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+(function(){
+  cfg=loadCfg();
+  if(cfg&&cfg.owner&&cfg.repo&&cfg.token){
+    document.getElementById('setupScreen').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+  }
+})();
+</script>
+</body>
+</html>
