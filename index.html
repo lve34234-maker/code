@@ -381,6 +381,13 @@ function apiBase(){ return `https://api.github.com/repos/${cfg.owner}/${cfg.repo
 // SETUP
 // ══════════════════════════════════════════
 function showSetup(){
+  // 관리자만 설정 변경 가능
+  if(!curUser || curUser.role!=='admin'){
+    const pw = prompt('⚙️ 설정 변경은 관리자만 가능해요.\n관리자 비밀번호를 입력하세요:');
+    if(!pw) return;
+    const isAdmin = Object.entries(ADMIN_PW).some(([id,p])=>p===pw);
+    if(!isAdmin){ alert('❌ 비밀번호가 틀렸어요!'); return; }
+  }
   const c = loadCfg()||{};
   document.getElementById('cfgOwner').value = c.owner||'';
   document.getElementById('cfgRepo').value = c.repo||'';
