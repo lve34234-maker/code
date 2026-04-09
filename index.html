@@ -221,8 +221,8 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
         <div style="margin-top:.5rem">
           <label style="font-size:.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:.3rem">파일 1개당 최대 크기</label>
           <div class="maxmb-row">
-            <input class="fld" id="cfgMaxMb" type="number" value="500" min="1" max="2000" style="width:90px;margin:0"/>
-            <span>MB · GitHub 최대 2GB까지 가능</span>
+            <input class="fld" id="cfgMaxMb" type="number" value="25" min="1" max="25" style="width:90px;margin:0"/>
+            <span>MB (최대 25MB · GitHub Contents API 제한)</span>
           </div>
         </div>
       </div>
@@ -402,7 +402,7 @@ document.getElementById('cfgSaveBtn').onclick = async function(){
   const owner = document.getElementById('cfgOwner').value.trim();
   const repo  = document.getElementById('cfgRepo').value.trim();
   const token = document.getElementById('cfgToken').value.trim();
-  const maxMb = parseInt(document.getElementById('cfgMaxMb').value)||500;
+  const maxMb = parseInt(document.getElementById('cfgMaxMb').value)||25;
   const errEl = document.getElementById('cfgErr');
   errEl.textContent='';
   if(!owner||!repo||!token){ errEl.textContent='❌ 아이디, 레포 이름, 토큰 모두 입력해주세요!'; return; }
@@ -439,21 +439,12 @@ async function getOrCreateRelease(){
 }
 
 async function fetchAllAssets(){
-  // Get all releases and their assets
-  const r = await fetch(`${apiBase()}/releases`,{headers:ghHeaders()});
-  if(!r.ok) throw new Error('릴리즈를 불러올 수 없어요');
-  const releases = await r.json();
-  const vault = releases.find(x=>x.tag_name===RELEASE_TAG);
-  if(!vault) return [];
-  releaseId = vault.id;
-  const r2 = await fetch(`${apiBase()}/releases/${vault.id}/assets?per_page=100`,{headers:ghHeaders()});
-  if(!r2.ok) return [];
-  const assets = await r2.json();
-  // Parse uploader/nick from label field: "uploader:nick"
-  return assets.map(a=>{
-    const parts = (a.label||'').split('|');
-    return {id:a.id, name:a.name, size:a.size, url:a.browser_download_url, uploader:parts[0]||'?', nick:parts[1]||parts[0]||'?', date:a.created_at};
-  });
+  try{
+    const r = await fetch(`${apiBase()}/contents/vault-files/index.json`,{headers:ghHeaders()});
+    if(!r.ok) return [];
+    const d = await r.json();
+    return JSON.parse(atob(d.content.replace(/\n/g,'')));
+  }catch(e){ return []; }
 }
 
 // ══════════════════════════════════════════
@@ -601,14 +592,36 @@ async function deleteFile(aid){
   if(!a) return;
   if(!confirm(`"${a.name}" 을 삭제할까요?`)) return;
   try{
-    const r=await fetch(`${apiBase()}/releases/assets/${aid}`,{method:'DELETE',headers:ghHeaders()});
-    if(!r.ok&&r.status!==204) throw new Error('삭제 실패');
+    // Delete actual file from repo
+    if(a.path){
+      try{
+        const chk=await fetch(`${apiBase()}/contents/${a.path}`,{headers:ghHeaders()});
+        if(chk.ok){
+          const fd=await chk.json();
+          await fetch(`${apiBase()}/contents/${a.path}`,{method:'DELETE',headers:{...ghHeaders(),'Content-Type':'application/json'},
+            body:JSON.stringify({message:'delete: '+a.name,sha:fd.sha,branch:'main'})});
+        }
+      }catch(e){}
+    }
+    // Update index.json
     allAssets=allAssets.filter(x=>x.id!==aid);
+    await updateIndex();
     const el=document.getElementById('fi_'+aid);
     if(el){ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }
     updateStats(); renderFiles();
     toast('삭제 완료 🗑️','warn');
   }catch(e){ toast('삭제 실패: '+e.message,'err'); }
+}
+
+async function updateIndex(){
+  let sha=null;
+  try{
+    const r=await fetch(`${apiBase()}/contents/vault-files/index.json`,{headers:ghHeaders()});
+    if(r.ok){ const d=await r.json(); sha=d.sha; }
+  }catch(e){}
+  const body={message:'meta update',content:btoa(unescape(encodeURIComponent(JSON.stringify(allAssets)))),branch:'main'};
+  if(sha) body.sha=sha;
+  await fetch(`${apiBase()}/contents/vault-files/index.json`,{method:'PUT',headers:{...ghHeaders(),'Content-Type':'application/json'},body:JSON.stringify(body)});
 }
 
 // ══════════════════════════════════════════
@@ -624,24 +637,20 @@ function setupUpload(){
 }
 
 async function handleFiles(files){
-  const maxBytes=(cfg.maxMb||500)*1024*1024;
+  const maxBytes=(cfg.maxMb||25)*1024*1024;
   const toUp=[];
   for(const f of files){
-    if(f.size>maxBytes){ toast(`${f.name}: 최대 크기 초과!`,'err'); continue; }
+    if(f.size>maxBytes){ toast(`${f.name}: 최대 ${cfg.maxMb||25}MB 초과!`,'err'); continue; }
     toUp.push(f);
   }
   if(!toUp.length) return;
-
-  // Ensure release exists
-  try{ await getOrCreateRelease(); }
-  catch(e){ toast('릴리즈 생성 실패: '+e.message,'err'); return; }
 
   const area=document.getElementById('progArea');
   area.classList.remove('hidden');
   const tasks=toUp.map(f=>({file:f,pct:0,done:false,err:null}));
 
   function renderProg(){
-    area.innerHTML=tasks.map((t,i)=>`
+    area.innerHTML=tasks.map(t=>`
       <div class="prog-item">
         <div class="prog-header"><span class="prog-name">${esc(t.file.name)}</span><span class="prog-pct">${t.done?'✓':t.err?'✗':t.pct+'%'}</span></div>
         <div class="pbar"><div class="pbar-fill" style="width:${t.done?100:t.pct}%"></div></div>
@@ -653,31 +662,96 @@ async function handleFiles(files){
   for(let i=0;i<tasks.length;i++){
     const t=tasks[i];
     try{
-      // GitHub upload API
-      const url=`https://uploads.github.com/repos/${cfg.owner}/${cfg.repo}/releases/${releaseId}/assets?name=${encodeURIComponent(t.file.name)}&label=${encodeURIComponent(curUser.id+'|'+curUser.nick)}`;
-      // Use XHR for progress
-      await new Promise((res,rej)=>{
-        const xhr=new XMLHttpRequest();
-        xhr.open('POST',url);
-        xhr.setRequestHeader('Authorization','token '+cfg.token);
-        xhr.setRequestHeader('Content-Type', t.file.type||'application/octet-stream');
-        xhr.setRequestHeader('Accept','application/vnd.github+json');
-        xhr.upload.onprogress=e=>{ if(e.lengthComputable){ t.pct=Math.round(e.loaded/e.total*100); renderProg(); }};
-        xhr.onload=()=>{
-          if(xhr.status===201){
-            const d=JSON.parse(xhr.responseText);
-            const parts=(d.label||'').split('|');
-            allAssets.unshift({id:d.id,name:d.name,size:d.size,url:d.browser_download_url,uploader:parts[0]||curUser.id,nick:parts[1]||curUser.nick,date:d.created_at});
-            t.done=true; ok++; renderProg(); updateStats(); renderFiles(); res();
-          } else { t.err=xhr.status; renderProg(); rej(new Error('HTTP '+xhr.status)); }
-        };
-        xhr.onerror=()=>{ t.err='네트워크 오류'; renderProg(); rej(new Error('네트워크 오류')); };
-        xhr.send(t.file);
+      // Read file as base64
+      t.pct=10; renderProg();
+      const base64 = await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=e=>res(e.target.result.split(',')[1]);
+        r.onerror=rej;
+        r.readAsDataURL(t.file);
       });
-    }catch(e){ toast(`${t.file.name} 업로드 실패: ${e.message}`,'err'); }
+      t.pct=40; renderProg();
+
+      // Safe filename: timestamp + original name
+      const safeName = Date.now()+'_'+t.file.name.replace(/[^a-zA-Z0-9._\-가-힣]/g,'_');
+      const path = `vault-files/${curUser.id}/${safeName}`;
+
+      // Check if file exists (for sha)
+      let sha = null;
+      try{
+        const chk = await fetch(`${apiBase()}/contents/${path}`,{headers:ghHeaders()});
+        if(chk.ok){ const d=await chk.json(); sha=d.sha; }
+      }catch(e){}
+
+      t.pct=60; renderProg();
+
+      // Upload via Contents API
+      const body = {
+        message: `upload: ${t.file.name} by ${curUser.id}`,
+        content: base64,
+        branch: 'main'
+      };
+      if(sha) body.sha = sha;
+
+      const r = await fetch(`${apiBase()}/contents/${path}`,{
+        method:'PUT',
+        headers:{...ghHeaders(),'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+
+      t.pct=90; renderProg();
+
+      if(!r.ok){
+        const d=await r.json();
+        throw new Error(d.message||'업로드 실패 ('+r.status+')');
+      }
+      const d = await r.json();
+      const downloadUrl = d.content.download_url;
+
+      // Save metadata to vault-files/meta.json
+      const meta = {
+        id: d.content.sha,
+        name: t.file.name,
+        safeName,
+        path,
+        size: t.file.size,
+        type: t.file.type||'application/octet-stream',
+        url: downloadUrl,
+        uploader: curUser.id,
+        nick: curUser.nick,
+        date: new Date().toISOString()
+      };
+      await saveMeta(meta);
+      allAssets.unshift(meta);
+      t.done=true; ok++;
+      renderProg(); updateStats(); renderFiles();
+    }catch(e){
+      t.err=e.message; renderProg();
+      toast(`${t.file.name} 실패: ${e.message}`,'err');
+    }
   }
   setTimeout(()=>{ area.classList.add('hidden'); area.innerHTML=''; },2000);
   if(ok>0) toast(`${ok}개 업로드 완료! 🎉`);
+}
+
+async function saveMeta(meta){
+  // Load existing meta list
+  let list = [];
+  let sha = null;
+  try{
+    const r = await fetch(`${apiBase()}/contents/vault-files/index.json`,{headers:ghHeaders()});
+    if(r.ok){
+      const d = await r.json();
+      sha = d.sha;
+      list = JSON.parse(atob(d.content.replace(/\n/g,'')));
+    }
+  }catch(e){}
+  list.unshift(meta);
+  // Keep max 500 entries
+  if(list.length>500) list=list.slice(0,500);
+  const body={message:'meta update',content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))),branch:'main'};
+  if(sha) body.sha=sha;
+  await fetch(`${apiBase()}/contents/vault-files/index.json`,{method:'PUT',headers:{...ghHeaders(),'Content-Type':'application/json'},body:JSON.stringify(body)});
 }
 
 // ══════════════════════════════════════════
