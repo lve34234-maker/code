@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 성경 정원</title>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Gaegu',cursive;background:#e8f5ff;min-height:100vh;overflow-x:hidden;background-image:radial-gradient(circle at 10% 20%,#ffecd2 0%,transparent 50%),radial-gradient(circle at 90% 80%,#d4f5c8 0%,transparent 50%);}
+button{font-family:'Gaegu',cursive;cursor:pointer;}input,select,textarea{font-family:'Gaegu',cursive;}
+.hidden{display:none!important;}
+.clouds{position:fixed;top:0;left:0;width:100%;pointer-events:none;z-index:0;}
+.cloud{position:absolute;background:white;border-radius:50px;opacity:0.5;animation:drift linear infinite;}
+.cloud::before,.cloud::after{content:'';position:absolute;background:white;border-radius:50%;}
+.c1{width:100px;height:32px;top:40px;animation-duration:28s;animation-delay:-5s;}.c1::before{width:50px;height:50px;top:-22px;left:12px;}.c1::after{width:34px;height:34px;top:-14px;left:44px;}
+.c2{width:70px;height:24px;top:90px;animation-duration:36s;animation-delay:-18s;}.c2::before{width:36px;height:36px;top:-16px;left:8px;}.c2::after{width:24px;height:24px;top:-10px;left:32px;}
+@keyframes drift{from{transform:translateX(-200px)}to{transform:translateX(calc(100vw + 200px))}}
+#splash{position:fixed;inset:0;background:white;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:opacity 0.5s;}
+.splash-icon{font-size:4rem;animation:bounce 1s infinite;}@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+/* AUTH */
+#screen-auth{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;}
+.auth-logo h1{font-size:2.6rem;font-weight:700;color:#4a9a50;text-shadow:3px 3px 0 white;letter-spacing:2px;text-align:center;}
+.auth-logo p{font-size:1.1rem;color:#7aaa70;text-align:center;margin:4px 0 20px;}
+.auth-card{background:white;border-radius:28px;padding:26px 22px;box-shadow:0 12px 32px rgba(0,0,0,0.1);width:100%;max-width:370px;}
+.auth-tabs{display:flex;background:#f5f5f5;border-radius:14px;padding:4px;margin-bottom:18px;}
+.auth-tab{flex:1;padding:8px;border:none;background:transparent;font-size:1.1rem;font-weight:700;color:#aaa;border-radius:10px;transition:all 0.2s;}
+.auth-tab.active{background:white;color:#4a9a50;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+.auth-field{margin-bottom:12px;}.auth-field label{display:block;font-size:1rem;color:#777;margin-bottom:4px;}
+.auth-input{width:100%;border:2.5px solid #e0e8d0;border-radius:14px;padding:10px 14px;font-size:1.15rem;color:#333;outline:none;background:#fafafa;transition:border-color 0.2s;}
+.auth-input:focus{border-color:#4a9a50;background:white;}
+.auth-submit{width:100%;background:linear-gradient(135deg,#6cc86a,#4a9a50);color:white;border:none;border-radius:50px;padding:12px;font-size:1.2rem;font-weight:700;box-shadow:0 5px 16px rgba(74,154,80,0.4);transition:all 0.2s;margin-top:4px;}
+.auth-submit:hover{transform:translateY(-2px);}
+.auth-err{color:#e05050;font-size:0.9rem;text-align:center;margin-top:6px;min-height:18px;}
+/* PET SELECT */
+#screen-select{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 16px;gap:16px;}
+.sel-title{font-size:2.4rem;font-weight:700;color:#4a9a50;text-shadow:3px 3px 0 white;text-align:center;}
+.companions-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:460px;}
+.companion-btn{background:white;border:3px solid #e0e8d0;border-radius:24px;padding:18px 12px;transition:all 0.25s;text-align:center;box-shadow:0 6px 16px rgba(0,0,0,0.07);display:flex;flex-direction:column;align-items:center;gap:5px;}
+.companion-btn:hover{transform:translateY(-5px) scale(1.03);border-color:#a8d890;}
+.companion-btn.sel{border-color:#4a9a50;background:#e8f5e0;}
+.cmp-icon{font-size:3.2rem;line-height:1;}.cmp-title{font-size:1.2rem;font-weight:700;color:#3a5a3a;}.cmp-desc{font-size:0.83rem;color:#aaa;}
+.name-sec{width:100%;max-width:340px;display:flex;flex-direction:column;gap:9px;animation:fadeUp 0.4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.name-inp{border:3px solid #c8e8b0;border-radius:50px;padding:10px 18px;font-size:1.25rem;color:#333;outline:none;text-align:center;background:white;transition:border-color 0.2s;width:100%;}
+.name-inp:focus{border-color:#4a9a50;}
+.start-btn{background:linear-gradient(135deg,#6cc86a,#4a9a50);color:white;border:none;border-radius:50px;padding:12px;font-size:1.2rem;font-weight:700;box-shadow:0 5px 16px rgba(74,154,80,0.4);transition:all 0.2s;}
+.start-btn:disabled{opacity:0.4;cursor:not-allowed;}
+/* MAIN */
+#screen-main{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;max-width:960px;margin:0 auto;width:100%;}
+.app-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 6px;position:sticky;top:0;z-index:50;background:rgba(232,245,255,0.92);backdrop-filter:blur(8px);}
+.app-logo{font-size:1.45rem;font-weight:700;color:#4a9a50;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.pts-pill{background:white;border-radius:50px;padding:4px 13px;font-size:1rem;font-weight:700;color:#4a9a50;border:2.5px solid #b8e8a0;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.pts-num{display:inline-block;transition:transform 0.3s;}.pts-num.bump{animation:numBump 0.4s ease;}
+@keyframes numBump{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
+.user-chip{font-size:0.85rem;color:#aaa;}
+.logout-btn{background:white;border:2px solid #f0d0d0;border-radius:50px;padding:4px 11px;font-size:0.88rem;color:#d07070;transition:all 0.2s;}
+.logout-btn:hover{background:#fff0f0;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:white;border-top:2px solid #e8f0e0;display:flex;box-shadow:0 -4px 16px rgba(0,0,0,0.07);}
+.nav-btn{flex:1;padding:9px 4px 7px;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:0.75rem;color:#bbb;transition:all 0.2s;}
+.nav-btn .ni{font-size:1.35rem;}.nav-btn.active{color:#4a9a50;}.nav-btn.active .ni{transform:scale(1.15);}
+.tab-content{padding:10px 10px 90px;display:none;}.tab-content.active{display:block;}
+.card{background:white;border-radius:22px;padding:16px;box-shadow:0 5px 18px rgba(0,0,0,0.07);margin-bottom:12px;}
+.card-title{font-size:1.05rem;font-weight:700;color:#5a6a4a;display:flex;align-items:center;gap:6px;margin-bottom:11px;}
+/* PET PANEL */
+.garden-layout{display:grid;grid-template-columns:230px 1fr;gap:12px;}
+@media(max-width:640px){.garden-layout{grid-template-columns:1fr;}}
+.pet-panel{background:white;border-radius:22px;padding:16px 13px;box-shadow:0 5px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;align-items:center;gap:4px;position:sticky;top:56px;height:fit-content;}
+.pet-stage-wrap{width:105px;height:105px;display:flex;align-items:center;justify-content:center;background:#e8f5e0;border-radius:50%;border:3px dashed #b8e8a0;margin:5px 0;}
+.pet-emoji{font-size:3.8rem;line-height:1;animation:breath 4s ease-in-out infinite;}
+@keyframes breath{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.07) rotate(2deg)}}
+.pet-emoji.grow{animation:petGrow 0.7s ease-out;}
+@keyframes petGrow{0%{transform:scale(0.4) rotate(-15deg)}60%{transform:scale(1.2) rotate(4deg)}100%{transform:scale(1) rotate(0deg)}}
+.pet-name-d{font-size:1.25rem;font-weight:700;color:#3a5a3a;}.pet-type-d{font-size:0.82rem;color:#ccc;}
+.pet-status-d{font-size:0.9rem;color:#7aaa70;text-align:center;}
+.lv-row{display:flex;gap:3px;}.lv-star{font-size:0.85rem;opacity:0.2;transition:0.3s;}.lv-star.on{opacity:1;}
+.stats-box{width:100%;margin:4px 0;}
+.sg{display:flex;align-items:center;gap:5px;margin-bottom:4px;font-size:0.82rem;}
+.si{width:18px;text-align:center;}.st{flex:1;height:9px;background:#efefef;border-radius:5px;overflow:hidden;}
+.sf{height:100%;border-radius:5px;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);}
+.fw{background:linear-gradient(90deg,#74c9ff,#3aaaff)}.ff{background:linear-gradient(90deg,#ffc87a,#ff9a3c)}
+.fh{background:linear-gradient(90deg,#ff9ad8,#ff5ab8)}.fe{background:linear-gradient(90deg,#b4f074,#7acc30)}
+.fg{background:linear-gradient(90deg,#84e88a,#4ac850)}
+.care-btns{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;width:100%;margin-top:5px;}
+.cb{background:#f8f8f8;border:2.5px solid #e0e0e0;border-radius:50px;padding:5px 10px;font-size:0.86rem;transition:all 0.2s;display:flex;align-items:center;gap:2px;}
+.cb:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+.cb:disabled{opacity:0.3;cursor:not-allowed;}
+.cb.w{border-color:#74c9ff}.cb.w:hover:not(:disabled){background:#e8f6ff}
+.cb.f{border-color:#ffc87a}.cb.f:hover:not(:disabled){background:#fff5e8}
+.cb.h{border-color:#ff9ad8}.cb.h:hover:not(:disabled){background:#fff0f8}
+.cb.e{border-color:#b4f074}.cb.e:hover:not(:disabled){background:#f2ffe8}
+.cost-tag{font-size:0.68rem;background:#f0f0f0;border-radius:8px;padding:1px 4px;color:#999;}
+/* BIBLE PANEL */
+.bible-panel{background:white;border-radius:22px;padding:18px;box-shadow:0 5px 18px rgba(0,0,0,0.07);display:flex;flex-direction:column;gap:12px;}
+.bible-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.bible-ref{font-size:0.88rem;font-weight:700;color:#7a6a4a;background:#fff8d0;border-radius:10px;padding:3px 10px;border:1.5px solid #f0dea0;white-space:nowrap;}
+.passage-box{background:linear-gradient(135deg,#fffef8,#f8f4ec);border-radius:14px;padding:13px 15px;border:2px solid #f0e8d0;position:relative;}
+.passage-box::before{content:'❝';font-size:2.2rem;color:#e8d8b0;position:absolute;top:-5px;left:9px;line-height:1;}
+.passage-text{font-size:1.04rem;line-height:1.85;color:#4a3a2a;padding-top:10px;white-space:pre-wrap;word-break:keep-all;}
+.loading-txt{text-align:center;padding:20px;color:#ccc;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+.p-nav-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.p-nav-btn{background:white;border:2px solid #d8e8f0;border-radius:50px;padding:5px 12px;font-size:0.88rem;color:#5a7a9a;transition:all 0.2s;}
+.p-nav-btn.done{background:#e8f5e0;border-color:#8acc8a;color:#3a7a3a;}
+.p-nav-btn.cur{background:#e8f0ff;border-color:#88a8ee;color:#3a5a9a;font-weight:700;}
+.read-done-btn{background:linear-gradient(135deg,#ffd880,#ffb830);color:#6a4a10;border:none;border-radius:50px;padding:10px;font-size:1.1rem;font-weight:700;box-shadow:0 4px 12px rgba(255,184,48,0.4);transition:all 0.2s;}
+.read-done-btn:hover{transform:translateY(-2px);}
+.quiz-zone{display:flex;flex-direction:column;gap:9px;animation:fadeUp 0.4s ease;}
+.quiz-prog{font-size:0.86rem;color:#bbb;text-align:center;}
+.quiz-q{background:linear-gradient(135deg,#f0f8ff,#e8f5ff);border-radius:13px;padding:11px 15px;font-size:1.05rem;font-weight:700;color:#2a4a8a;border:2px solid #cce0ff;line-height:1.5;word-break:keep-all;}
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.opt-btn{background:white;border:2.5px solid #d8e8f8;border-radius:12px;padding:9px 10px;font-size:0.97rem;cursor:pointer;text-align:left;color:#3a3a5a;transition:all 0.2s;word-break:keep-all;line-height:1.35;}
+.opt-btn:hover:not(:disabled){background:#eef4ff;transform:translateY(-1px);border-color:#88b8ff;}
+.opt-btn.correct{background:#d4f5d0;border-color:#6cc86a;color:#1a6a1a;}
+.opt-btn.wrong{background:#ffd8d8;border-color:#ff8888;color:#8a2020;}
+.opt-btn:disabled{cursor:default;}
+.quiz-result{text-align:center;font-size:1.1rem;font-weight:700;padding:8px 12px;border-radius:12px;min-height:40px;}
+.quiz-result.ok{background:#d4f5d0;color:#1a6a1a;animation:popIn 0.3s ease;}
+.quiz-result.fail{background:#ffd8d8;color:#8a2020;animation:shake 0.4s ease;}
+@keyframes popIn{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.next-q-btn{background:linear-gradient(135deg,#a8e090,#6cc860);color:white;border:none;border-radius:50px;padding:10px;font-size:1.08rem;font-weight:700;box-shadow:0 3px 10px rgba(100,200,80,0.4);transition:all 0.2s;}
+.next-q-btn:hover{transform:translateY(-1px);}
+.next-p-btn{background:linear-gradient(135deg,#a0c8ff,#6898ee);color:white;border:none;border-radius:50px;padding:10px;font-size:1.08rem;font-weight:700;box-shadow:0 3px 10px rgba(100,150,240,0.4);transition:all 0.2s;}
+.all-done-banner{background:linear-gradient(135deg,#d4f5d0,#fff8d0);border-radius:16px;padding:18px;text-align:center;border:2px dashed #8acc8a;}
+/* ACTIVITY CARDS */
+.activity-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+@media(max-width:640px){.activity-row{grid-template-columns:1fr;}}
+.daily-badge{display:inline-flex;align-items:center;gap:4px;background:#f0f8ff;border-radius:20px;padding:3px 10px;font-size:0.82rem;color:#5a7aaa;border:1.5px solid #c8dff8;margin-bottom:8px;}
+.daily-badge.full{background:#fff0e8;color:#aa7a3a;border-color:#f8d8b0;}
+.rec-area{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.rec-btn{width:72px;height:72px;border-radius:50%;border:none;font-size:2rem;display:flex;align-items:center;justify-content:center;transition:all 0.2s;box-shadow:0 5px 15px rgba(0,0,0,0.12);}
+.rec-btn.idle{background:linear-gradient(135deg,#ff9a9a,#e05050);color:white;}
+.rec-btn.idle:hover{transform:scale(1.08);}
+.rec-btn.recording{background:linear-gradient(135deg,#ff5a5a,#cc2020);color:white;animation:recPulse 1s infinite;}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,50,50,0.4)}50%{box-shadow:0 0 0 12px rgba(220,50,50,0)}}
+.rec-btn.done{background:linear-gradient(135deg,#a0e8b0,#50b870);color:white;}
+.rec-timer{font-size:1.4rem;font-weight:700;color:#c03030;letter-spacing:2px;}
+.waveform{display:flex;align-items:center;gap:3px;height:30px;}
+.wave-bar{width:4px;background:#ff7070;border-radius:2px;animation:wavAnim 0.8s ease-in-out infinite;}
+.wave-bar:nth-child(1){animation-delay:0s}.wave-bar:nth-child(2){animation-delay:0.1s}.wave-bar:nth-child(3){animation-delay:0.2s}.wave-bar:nth-child(4){animation-delay:0.3s}.wave-bar:nth-child(5){animation-delay:0.4s}
+@keyframes wavAnim{0%,100%{height:6px}50%{height:24px}}
+.rec-audio{width:100%;border-radius:10px;margin-top:4px;}
+.submit-rec-btn{background:linear-gradient(135deg,#6cc86a,#4a9a50);color:white;border:none;border-radius:50px;padding:8px 18px;font-size:1rem;font-weight:700;box-shadow:0 3px 10px rgba(74,154,80,0.4);transition:all 0.2s;}
+.submit-rec-btn:hover{transform:translateY(-1px);}
+.submit-rec-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.retry-btn{background:white;border:2px solid #ddd;border-radius:50px;padding:6px 14px;font-size:0.9rem;color:#888;transition:all 0.2s;}
+.rec-status{font-size:0.9rem;color:#aaa;text-align:center;}
+/* MEDITATION */
+.meditation-area{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.photo-upload-label{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;min-height:110px;background:#f8f8f8;border:2.5px dashed #d0d0d0;border-radius:16px;cursor:pointer;transition:all 0.2s;color:#aaa;font-size:1rem;}
+.photo-upload-label:hover{background:#f0f0f0;border-color:#b0b0b0;}
+.photo-preview{width:100%;border-radius:14px;object-fit:cover;max-height:180px;}
+.submit-photo-btn{background:linear-gradient(135deg,#9ad8ff,#60a8ee);color:white;border:none;border-radius:50px;padding:8px 20px;font-size:1rem;font-weight:700;box-shadow:0 3px 10px rgba(100,168,238,0.4);transition:all 0.2s;width:100%;}
+.submit-photo-btn:hover{transform:translateY(-1px);}
+.submit-photo-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.med-pending{background:#fff8e0;border-radius:12px;padding:8px 14px;text-align:center;font-size:0.9rem;color:#aa8a30;border:1.5px solid #f0d880;}
+.med-approved{background:#e8f5e0;border-radius:12px;padding:8px 14px;text-align:center;font-size:0.9rem;color:#3a7a3a;border:1.5px solid #8acc8a;}
+/* BIBLE READER */
+.testament-tabs{display:flex;background:#f0f0f0;border-radius:14px;padding:4px;width:fit-content;margin-bottom:12px;}
+.t-tab{padding:6px 18px;border:none;background:transparent;font-size:0.95rem;font-weight:700;color:#aaa;border-radius:10px;transition:all 0.2s;}
+.t-tab.active{background:white;color:#4a9a50;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+.book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;margin-top:8px;}
+.book-btn{background:white;border:2px solid #e0e8d0;border-radius:10px;padding:6px 3px;font-size:0.85rem;color:#5a6a4a;transition:all 0.16s;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.book-btn:hover{background:#e8f5e0;border-color:#a8d890;transform:translateY(-1px);}
+.book-btn.ab{background:#e8f5e0;border-color:#4a9a50;color:#4a9a50;font-weight:700;}
+.chapter-nav{display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;}
+.chapter-sel{border:2.5px solid #b8e8a0;border-radius:12px;padding:6px 10px;font-size:1rem;color:#3a5a3a;outline:none;background:white;}
+.ch-arr{background:white;border:2.5px solid #b8e8a0;border-radius:50%;width:34px;height:34px;font-size:1rem;color:#4a9a50;display:flex;align-items:center;justify-content:center;transition:all 0.16s;}
+.ch-arr:hover{background:#e8f5e0;}.ch-title{font-size:1.1rem;font-weight:700;color:#3a5a3a;}
+.reader-box{background:white;border-radius:18px;padding:18px 20px;box-shadow:0 3px 12px rgba(0,0,0,0.06);font-size:1.08rem;line-height:2.1;color:#3a2a1a;word-break:keep-all;border:2px solid #f0ead8;}
+.verse{display:block;margin-bottom:2px;}.verse-num{font-weight:700;color:#9a7a4a;font-size:0.88rem;margin-right:3px;}
+/* HISTORY */
+.h-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.h-stat{background:white;border-radius:14px;padding:10px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,0.06);}
+.h-stat-n{font-size:1.7rem;font-weight:700;color:#4a9a50;}.h-stat-l{font-size:0.78rem;color:#aaa;}
+.hist-item{background:white;border-radius:16px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.05);display:flex;gap:10px;align-items:flex-start;border-left:5px solid #eee;margin-bottom:8px;animation:fadeUp 0.3s ease;}
+.hist-item.ok{border-left-color:#6cc86a;}.hist-item.ng{border-left-color:#ff8888;}
+.h-ico{font-size:1.5rem;flex-shrink:0;}
+.h-ref{font-size:0.78rem;color:#9a7a4a;background:#fff8d0;border-radius:7px;padding:1px 6px;display:inline-block;margin-bottom:3px;}
+.h-q{font-size:0.96rem;font-weight:700;color:#3a3a5a;word-break:keep-all;}.h-ans{font-size:0.83rem;color:#888;}
+.h-ans .ok{color:#4a8a4a;font-weight:700;}.h-ans .ng{color:#c05050;text-decoration:line-through;}
+.h-date{font-size:0.74rem;color:#ccc;margin-top:2px;}
+/* ADMIN */
+.admin-subtabs{display:flex;background:#fff5f5;border-radius:14px;padding:4px;margin-bottom:14px;}
+.a-tab{flex:1;padding:7px;border:none;background:transparent;font-size:0.9rem;font-weight:700;color:#ccc;border-radius:10px;transition:all 0.2s;}
+.a-tab.active{background:white;color:#c05050;box-shadow:0 2px 6px rgba(0,0,0,0.08);}
+.admin-section{display:none;}.admin-section.active{display:block;}
+.a-table-wrap{background:white;border-radius:18px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.07);overflow-x:auto;}
+.a-table{width:100%;border-collapse:collapse;min-width:580px;}
+.a-table th{background:#fff5f5;padding:9px 12px;font-size:0.82rem;color:#c07070;text-align:left;border-bottom:2px solid #ffe0e0;white-space:nowrap;}
+.a-table td{padding:9px 12px;font-size:0.88rem;color:#3a3a3a;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.a-table tr:hover td{background:#fafafa;}
+.pet-badge{background:#e8f5e0;border-radius:7px;padding:1px 7px;font-size:0.78rem;color:#4a8a4a;font-weight:700;}
+.del-btn{background:#fff0f0;border:1.5px solid #f0c0c0;border-radius:7px;padding:2px 8px;font-size:0.78rem;color:#d05050;transition:all 0.2s;}
+.del-btn:hover{background:#ffe0e0;}
+/* DAILY PASSAGE CONFIG */
+.add-passage-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.add-passage-row select{border:2px solid #c8e8b0;border-radius:10px;padding:7px 10px;font-size:0.9rem;outline:none;background:white;}
+.add-p-btn{background:linear-gradient(135deg,#6cc86a,#4a9a50);color:white;border:none;border-radius:50px;padding:7px 16px;font-size:0.9rem;font-weight:700;box-shadow:0 3px 8px rgba(74,154,80,0.3);transition:all 0.2s;}
+.add-p-btn:hover{transform:translateY(-1px);}
+.dp-item{background:#f8f8f8;border-radius:14px;padding:10px 12px;margin-bottom:8px;}
+.dp-item-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.dp-ref-tag{font-size:0.9rem;font-weight:700;color:#3a5a9a;background:#e8f0ff;border-radius:8px;padding:2px 9px;}
+.dp-remove{background:none;border:none;font-size:0.9rem;color:#e07070;cursor:pointer;padding:2px 6px;}
+.dp-toggle-btn{background:white;border:2px solid #c8d8f8;border-radius:50px;padding:4px 12px;font-size:0.85rem;color:#5a7aaa;transition:all 0.2s;margin-top:4px;}
+.dp-toggle-btn:hover{background:#e8f0ff;}
+.cqf{background:white;border-radius:10px;padding:10px;border:1.5px solid #e0e8f8;margin-top:6px;}
+.cqf-input{border:1.5px solid #d0d8e8;border-radius:8px;padding:6px 10px;font-size:0.9rem;width:100%;outline:none;margin-bottom:4px;}
+.cqf-opts{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;}
+.ans-sel{border:1.5px solid #c8d8f8;border-radius:7px;padding:4px 8px;font-size:0.85rem;outline:none;background:white;}
+.save-dp-btn{background:linear-gradient(135deg,#60a8ee,#3880cc);color:white;border:none;border-radius:50px;padding:11px;font-size:1.05rem;font-weight:700;box-shadow:0 4px 12px rgba(60,128,200,0.4);transition:all 0.2s;width:100%;margin-top:8px;}
+.save-dp-btn:hover{transform:translateY(-1px);}
+/* MEDITATION REVIEW */
+.med-item{background:white;border-radius:16px;padding:12px;display:flex;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:10px;}
+.med-photo{width:90px;height:90px;border-radius:12px;object-fit:cover;border:2px solid #e0e0e0;flex-shrink:0;cursor:pointer;}
+.med-user{font-size:1rem;font-weight:700;color:#3a3a5a;}.med-date{font-size:0.78rem;color:#bbb;}
+.med-actions{display:flex;gap:7px;margin-top:8px;}
+.approve-btn{background:linear-gradient(135deg,#a0e890,#60b870);color:white;border:none;border-radius:50px;padding:6px 16px;font-size:0.9rem;font-weight:700;transition:all 0.2s;}
+.approve-btn:hover{transform:translateY(-1px);}
+.reject-btn{background:#fff0f0;border:1.5px solid #f0c0c0;border-radius:50px;padding:6px 14px;font-size:0.9rem;color:#d05050;transition:all 0.2s;}
+.reject-btn:hover{background:#ffe0e0;}
+.badge-approved{background:#e8f5e0;border-radius:8px;padding:3px 10px;font-size:0.82rem;color:#3a7a3a;display:inline-block;}
+.badge-rejected{background:#ffd8d8;border-radius:8px;padding:3px 10px;font-size:0.82rem;color:#8a2020;display:inline-block;}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;display:none;align-items:center;justify-content:center;cursor:pointer;}
+#lightbox img{max-width:90vw;max-height:90vh;border-radius:12px;}
+#lightbox.open{display:flex;}
+/* TOAST / PARTICLES */
+#toast-wrap{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9998;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:7px;}
+.toast{background:rgba(30,30,30,0.9);color:white;padding:8px 20px;border-radius:50px;font-size:1rem;animation:toastLife 2.5s forwards;white-space:nowrap;}
+@keyframes toastLife{0%{opacity:0;transform:translateY(-10px) scale(0.9)}15%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1}100%{opacity:0}}
+.ptcl{position:fixed;pointer-events:none;animation:ptclFly 1.1s ease forwards;z-index:9997;font-size:1.3rem;}
+@keyframes ptclFly{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.2) rotate(360deg)}}
+.empty-txt{text-align:center;padding:28px;color:#ccc;font-size:1.05rem;}
+</style>
+</head>
+<body>
+<div class="clouds"><div class="cloud c1" style="left:-200px"></div><div class="cloud c2" style="left:-150px"></div></div>
+<div id="toast-wrap"></div>
+<div id="lightbox" onclick="this.classList.remove('open')"><img id="lb-img" src="" alt=""></div>
+<div id="splash"><div class="splash-icon">🌿</div><p style="font-size:1.2rem;color:#7aaa70">성경 정원 열리는 중...</p></div>
+
+<!-- AUTH -->
+<div id="screen-auth" class="hidden">
+  <div class="auth-logo"><h1>🌿 성경 정원 🌿</h1><p>성경을 읽고 친구를 키워요!</p></div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-li" onclick="switchAuthTab('login')">로그인</button>
+      <button class="auth-tab" id="tab-su" onclick="switchAuthTab('signup')">회원가입</button>
+    </div>
+    <div id="form-login">
+      <div class="auth-field"><label>아이디</label><input class="auth-input" id="lid" type="text" placeholder="아이디"></div>
+      <div class="auth-field"><label>비밀번호</label><input class="auth-input" id="lpw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="auth-submit" onclick="doLogin()">🌱 로그인</button>
+      <div class="auth-err" id="lerr"></div>
+    </div>
+    <div id="form-signup" class="hidden">
+      <div class="auth-field"><label>아이디 (영문/숫자)</label><input class="auth-input" id="sid" type="text" placeholder="아이디" maxlength="20"></div>
+      <div class="auth-field"><label>비밀번호 (6자 이상)</label><input class="auth-input" id="spw" type="password" placeholder="비밀번호"></div>
+      <div class="auth-field"><label>비밀번호 확인</label><input class="auth-input" id="spw2" type="password" placeholder="비밀번호 확인" onkeydown="if(event.key==='Enter')doSignup()"></div>
+      <button class="auth-submit" onclick="doSignup()">✨ 회원가입</button>
+      <div class="auth-err" id="serr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PET SELECT -->
+<div id="screen-select" class="hidden">
+  <div class="sel-title">🌿 성경 정원 🌿</div>
+  <div style="font-size:1.05rem;color:#7aaa70">처음 오셨군요! 친구를 골라요</div>
+  <div class="companions-grid">
+    <button class="companion-btn" onclick="selComp('plant',this)"><div class="cmp-icon">🌱</div><div class="cmp-title">식물</div><div class="cmp-desc">물 주며 꽃 피워요</div></button>
+    <button class="companion-btn" onclick="selComp('tree',this)"><div class="cmp-icon">🪴</div><div class="cmp-title">나무</div><div class="cmp-desc">크게 자라는 나무</div></button>
+    <button class="companion-btn" onclick="selComp('dog',this)"><div class="cmp-icon">🐶</div><div class="cmp-title">강아지</div><div class="cmp-desc">산책하며 함께해요</div></button>
+    <button class="companion-btn" onclick="selComp('cat',this)"><div class="cmp-icon">🐱</div><div class="cmp-title">고양이</div><div class="cmp-desc">같이 놀며 키워요</div></button>
+  </div>
+  <div class="name-sec" id="nameSec" style="display:none">
+    <div style="font-size:1.05rem;font-weight:700;color:#5a6a4a;text-align:center" id="nameLbl">이름을 지어줘요!</div>
+    <input class="name-inp" id="nameInp" type="text" maxlength="10" placeholder="이름 입력" oninput="checkStart()">
+    <button class="start-btn" id="startBtn" onclick="createPet()" disabled>🌱 시작하기!</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="screen-main" class="hidden">
+  <div class="app-header">
+    <div class="app-logo">🌿 성경 정원</div>
+    <div class="header-right">
+      <div class="pts-pill">✨ <span class="pts-num" id="ptsNum">0</span>점</div>
+      <span class="user-chip" id="userChip"></span>
+      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- 정원 탭 -->
+  <div class="tab-content active" id="tab-garden">
+    <div class="garden-layout">
+      <div class="pet-panel">
+        <div style="font-size:0.8rem;color:#ccc;font-weight:700">내 친구</div>
+        <div class="pet-stage-wrap"><div class="pet-emoji" id="petEmoji">🌱</div></div>
+        <div class="pet-name-d" id="petNameD"></div>
+        <div class="pet-type-d" id="petTypeD"></div>
+        <div class="lv-row" id="lvRow"></div>
+        <div class="pet-status-d" id="petStatusD"></div>
+        <div class="stats-box" id="statsBox"></div>
+        <div class="care-btns" id="careBtns"></div>
+      </div>
+      <div class="bible-panel">
+        <div class="bible-hdr">
+          <div style="font-size:1rem;font-weight:700;color:#5a6a4a">📖 오늘의 말씀</div>
+          <div class="bible-ref" id="bibleRef">로딩 중...</div>
+        </div>
+        <div class="p-nav-bar" id="pNavBar" style="display:none"></div>
+        <div class="passage-box">
+          <div class="passage-text" id="passageText"><div class="loading-txt">📖 말씀 불러오는 중...</div></div>
+        </div>
+        <div id="bibleActions"></div>
+      </div>
+    </div>
+    <div class="activity-row">
+      <div class="card">
+        <div class="card-title">🎙️ 성경 읽기 인증</div>
+        <div id="recBadge" class="daily-badge">오늘 0 / 3회 · 0점</div>
+        <div class="rec-area" id="recArea">
+          <button class="rec-btn idle" id="recBtn" onclick="toggleRec()">🎙️</button>
+          <div class="rec-status" id="recStatus">버튼을 누르고 성경을 소리 내어 읽어요</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📷 묵상 인증</div>
+        <div id="medBadge" class="daily-badge">오늘 0 / 1회 · 0점</div>
+        <div class="meditation-area" id="medArea">
+          <label class="photo-upload-label" for="photoInput" id="photoLabel">
+            <span style="font-size:2rem">📸</span><span>묵상 노트 사진을 찍어요</span>
+          </label>
+          <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="onPhotoSelected(event)">
+          <div id="photoPreviewWrap" style="display:none;width:100%">
+            <img id="photoPreview" class="photo-preview" src="" alt="">
+            <div style="display:flex;gap:7px;margin-top:8px">
+              <button class="submit-photo-btn" id="submitPhotoBtn" onclick="submitMeditation()">✅ 제출하기 (+10점)</button>
+              <button class="retry-btn" onclick="resetPhoto()">다시 선택</button>
+            </div>
+          </div>
+          <div id="medStatusMsg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 성경 탭 -->
+  <div class="tab-content" id="tab-bible">
+    <div class="card">
+      <div class="card-title">📖 전자 성경</div>
+      <div class="testament-tabs">
+        <button class="t-tab active" onclick="setTestament('old',this)">구약</button>
+        <button class="t-tab" onclick="setTestament('new',this)">신약</button>
+      </div>
+      <div class="book-grid" id="bookGrid"></div>
+    </div>
+    <div class="card" id="chNavCard" style="display:none">
+      <div class="chapter-nav">
+        <button class="ch-arr" onclick="changeChapter(-1)">◀</button>
+        <span class="ch-title" id="chTitle"></span>
+        <select class="chapter-sel" id="chSel" onchange="loadChapter()"></select>
+        <button class="ch-arr" onclick="changeChapter(1)">▶</button>
+      </div>
+    </div>
+    <div class="card" id="readerCard" style="display:none">
+      <div class="reader-box" id="readerBox"><div class="loading-txt">책을 선택하면 성경이 나와요 📖</div></div>
+    </div>
+  </div>
+
+  <!-- 기록 탭 -->
+  <div class="tab-content" id="tab-history">
+    <div style="font-size:1.2rem;font-weight:700;color:#3a5a3a;padding:0 0 10px">📝 내 퀴즈 기록</div>
+    <div class="h-stats-row" id="histStats"></div>
+    <div id="histList"><div class="empty-txt">📖 퀴즈를 풀면 여기에 기록돼요!</div></div>
+  </div>
+
+  <!-- 어드민 탭 -->
+  <div class="tab-content" id="tab-admin">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:1.3rem;font-weight:700;color:#c05050">👑 관리자 패널</span>
+      <span style="background:#fff0f0;border:1.5px solid #f0c0c0;border-radius:8px;padding:1px 9px;font-size:0.82rem;color:#c05050;font-weight:700">ADMIN</span>
+    </div>
+    <div class="admin-subtabs">
+      <button class="a-tab active" onclick="switchAdminTab('users',this)">👥 회원</button>
+      <button class="a-tab" onclick="switchAdminTab('daily',this)">📅 오늘말씀</button>
+      <button class="a-tab" onclick="switchAdminTab('meds',this)">📷 묵상확인</button>
+    </div>
+    <div class="admin-section active" id="adm-users">
+      <div class="a-table-wrap">
+        <table class="a-table">
+          <thead><tr><th>아이디</th><th>친구</th><th>이름</th><th>레벨</th><th>포인트</th><th>총퀴즈</th><th>정답률</th><th>가입일</th><th></th></tr></thead>
+          <tbody id="admTbody"><tr><td colspan="9" class="empty-txt">로딩 중...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="admin-section" id="adm-daily">
+      <div class="card">
+        <div class="card-title">📅 오늘의 말씀 설정 <span style="font-size:0.8rem;color:#aaa;font-weight:400" id="todayLbl"></span></div>
+        <div style="font-size:0.88rem;color:#aaa;margin-bottom:10px">구절 1개당 퀴즈 3문제. 오늘 회원들이 이 구절 퀴즈만 풀어요.</div>
+        <div class="add-passage-row">
+          <select id="dpTes" onchange="renderDpBooks()"><option value="old">구약</option><option value="new">신약</option></select>
+          <select id="dpBook"></select>
+          <select id="dpChap"></select>
+          <button class="add-p-btn" onclick="addDailyPassage()">+ 추가</button>
+        </div>
+        <div id="dpList"></div>
+        <button class="save-dp-btn" onclick="saveDailyConfig()">💾 오늘의 말씀 저장하기</button>
+      </div>
+    </div>
+    <div class="admin-section" id="adm-meds">
+      <div style="font-size:1.1rem;font-weight:700;color:#5a6a4a;margin-bottom:10px">📷 묵상 사진 확인</div>
+      <div id="medsList"><div class="empty-txt">제출된 묵상 사진이 없어요</div></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('garden',this)"><span class="ni">🌿</span><span>정원</span></button>
+    <button class="nav-btn" onclick="switchTab('bible',this)"><span class="ni">📖</span><span>성경</span></button>
+    <button class="nav-btn" onclick="switchTab('history',this)"><span class="ni">📝</span><span>기록</span></button>
+    <button class="nav-btn hidden" id="adminNavBtn" onclick="switchTab('admin',this)"><span class="ni">👑</span><span>어드민</span></button>
+  </nav>
+</div>
+
+<!-- Firebase 9.23.0 compat - 안정 버전 -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+/* ════════════════════════════════════
+   🔥 Firebase 설정 — 본인 것으로 바꿔주세요!
+════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyB9lu2eBbDGCv2as81b3mWdzi-n_SSoN0g",
+  authDomain:        "tjdrud-749bf.firebaseapp.com",
+  projectId:         "tjdrud-749bf",
+  storageBucket:     "tjdrud-749bf.firebasestorage.app",
+  messagingSenderId: "653650623003",
+  appId:             "1:653650623003:web:178681a6a87e91968d56be",
+  measurementId:     "G-S5X5VZRM8B"
+};
+
+/* ── 전역 변수 (Firebase 초기화 전에 선언) ── */
+const DOMAIN   = '@biblegarden.app';
+const ADMIN_ID = 'onchurch';
+let auth, db;
+let CU = null, UD = null, isAdmin = false;
+
+/* ── Firebase는 모든 스크립트 로드 완료 후 초기화 ── */
+window.addEventListener('load', function () {
+  if (typeof firebase === 'undefined') {
+    document.getElementById('splash').innerHTML =
+      '<div style="text-align:center;padding:40px"><div style="font-size:3rem">⚠️</div>' +
+      '<p style="font-size:1.1rem;color:#e05050;margin-top:12px">Firebase SDK 로드 실패<br>' +
+      '<small>인터넷 연결 확인 후 새로고침 해주세요</small></p></div>';
+    return;
+  }
+  try { firebase.initializeApp(firebaseConfig); } catch (e) { /* 이미 초기화됨 */ }
+  auth    = firebase.auth();
+  db      = firebase.firestore();
+
+  /* ── Auth 상태 감지 ── */
+  auth.onAuthStateChanged(async function (user) {
+    if (user) {
+      CU = user;
+      await loadUserDoc(user.uid);
+    } else {
+      CU = null; UD = null;
+      showScreen('auth');
+    }
+    hideSplash();
+  });
+});
+
+function hideSplash() {
+  const s = document.getElementById('splash');
+  s.style.opacity = '0';
+  setTimeout(() => s.style.display = 'none', 500);
+}
+function showScreen(n) {
+  ['auth','select','main'].forEach(s =>
+    document.getElementById('screen-' + s).classList.toggle('hidden', s !== n)
+  );
+}
+
+/* ════ AUTH ════ */
+function switchAuthTab(t) {
+  document.getElementById('form-login').classList.toggle('hidden', t === 'signup');
+  document.getElementById('form-signup').classList.toggle('hidden', t === 'login');
+  document.getElementById('tab-li').classList.toggle('active', t === 'login');
+  document.getElementById('tab-su').classList.toggle('active', t === 'signup');
+  document.getElementById('lerr').textContent = '';
+  document.getElementById('serr').textContent = '';
+}
+async function doLogin() {
+  const id = document.getElementById('lid').value.trim().toLowerCase();
+  const pw = document.getElementById('lpw').value;
+  const err = document.getElementById('lerr');
+  if (!id || !pw) { err.textContent = '아이디와 비밀번호를 입력해요!'; return; }
+  try { await auth.signInWithEmailAndPassword(id + DOMAIN, pw); }
+  catch { err.textContent = '아이디 또는 비밀번호가 틀렸어요!'; }
+}
+async function doSignup() {
+  const id  = document.getElementById('sid').value.trim().toLowerCase();
+  const pw  = document.getElementById('spw').value;
+  const pw2 = document.getElementById('spw2').value;
+  const err = document.getElementById('serr');
+  if (!id || !pw) { err.textContent = '아이디와 비밀번호를 입력해요!'; return; }
+  if (!/^[a-z0-9_]{2,20}$/.test(id)) { err.textContent = '아이디는 영문/숫자/밑줄 2~20자!'; return; }
+  if (pw.length < 6) { err.textContent = '비밀번호는 6자 이상!'; return; }
+  if (pw !== pw2)    { err.textContent = '비밀번호가 일치하지 않아요!'; return; }
+  const snap = await db.collection('users').where('username', '==', id).get();
+  if (!snap.empty)   { err.textContent = '이미 사용 중인 아이디예요!'; return; }
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(id + DOMAIN, pw);
+    await db.collection('users').doc(cred.user.uid).set({
+      username: id, email: id + DOMAIN, isAdmin: id === ADMIN_ID,
+      pet: null, totalQuizzes: 0, correctCount: 0,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) { err.textContent = '오류: ' + e.message; }
+}
+async function doLogout() { await auth.signOut(); showScreen('auth'); }
+
+async function loadUserDoc(uid) {
+  const snap = await db.collection('users').doc(uid).get();
+  if (!snap.exists) { showScreen('auth'); return; }
+  UD = snap.data(); isAdmin = UD.isAdmin || false;
+  document.getElementById('userChip').textContent = UD.username;
+  if (isAdmin) document.getElementById('adminNavBtn').classList.remove('hidden');
+  if (!UD.pet) { showScreen('select'); }
+  else { showScreen('main'); loadPetState(); initGarden(); }
+}
+
+/* ════ PET SELECT ════ */
+let selType = null;
+function selComp(type, btn) {
+  selType = type;
+  document.querySelectorAll('.companion-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('nameSec').style.display = 'flex';
+  document.getElementById('nameLbl').textContent = COMP[type].stages[0] + ' ' + COMP[type].label + '의 이름을 지어줘요!';
+  document.getElementById('nameInp').value = '';
+  document.getElementById('startBtn').disabled = true;
+}
+function checkStart() {
+  document.getElementById('startBtn').disabled = !(document.getElementById('nameInp').value.trim() && selType);
+}
+async function createPet() {
+  const name = document.getElementById('nameInp').value.trim();
+  if (!name || !selType) return;
+  const stats = {};
+  COMP[selType].stats.forEach(r => { stats[r[1]] = r[2]; });
+  const pet = { type: selType, name, level: 0, growScore: 0, stats, pts: 0 };
+  await db.collection('users').doc(CU.uid).update({ pet });
+  UD.pet = pet;
+  showScreen('main');
+  if (isAdmin) document.getElementById('adminNavBtn').classList.remove('hidden');
+  loadPetState(); initGarden();
+}
+
+/* ════ COMPANION DATA ════ */
+const COMP = {
+  plant:{ label:'식물', stages:['🌱','🌿','🌸','🌺','🌻'], names:['새싹','잎새','꽃봉오리','활짝꽃','해님꽃'], statuses:['막 싹을 틔웠어요!','쑥쑥 자라요!','꽃봉오리예요!','예쁘게 피었어요!','눈부신 꽃 ✨'], stats:[['💧','water',30,'fw'],['☀️','sun',40,'fh']], actions:[{id:'water',label:'💧 물주기',cls:'w',cost:2,stat:'water',add:28,grow:7}], growPts:[0,14,30,52,78] },
+  tree:{  label:'나무',  stages:['🪴','🌲','🌳','🎄','🌴'], names:['묘목','꼬마나무','튼튼나무','웅장나무','왕나무'], statuses:['작은 나무예요!','조금씩 자라요!','꽤 커졌어요!','웅장해요!','숲의 왕 ✨'], stats:[['💧','water',20,'fw'],['🌿','growth',15,'fg']], actions:[{id:'water',label:'💧 물주기',cls:'w',cost:2,stat:'water',add:26,grow:5},{id:'fertilize',label:'🌿 비료',cls:'e',cost:3,stat:'growth',add:22,grow:8}], growPts:[0,18,38,64,94] },
+  dog:{   label:'강아지', stages:['🐶','🐕','🦮','🐩','🐕‍🦺'], names:['강아지','복실이','복슬이','뽀삐','왕복슬'], statuses:['꼬리를 흔들어요!','밥 먹고 싶어요!','산책가요!','너무 행복해요!','전설 강아지 ✨'], stats:[['🍖','food',25,'ff'],['😊','happy',30,'fh'],['⚡','energy',20,'fe']], actions:[{id:'feed',label:'🍖 밥주기',cls:'f',cost:2,stat:'food',add:30,grow:5},{id:'walk',label:'🦮 산책',cls:'e',cost:3,stat:'energy',add:35,grow:8}], growPts:[0,14,30,52,78] },
+  cat:{   label:'고양이', stages:['🐱','😺','😸','🐈','🐈‍⬛'], names:['고양이','나비','야옹이','냐옹','왕냐옹'], statuses:['그루밍 중!','간식 먹고 싶어요!','놀고 싶어요!','냥냥 행복!','전설 고양이 ✨'], stats:[['🐟','food',30,'ff'],['😸','happy',35,'fh']], actions:[{id:'feed',label:'🐟 밥주기',cls:'f',cost:2,stat:'food',add:30,grow:5},{id:'play',label:'🧶 놀아주기',cls:'h',cost:3,stat:'happy',add:35,grow:8}], growPts:[0,15,32,55,80] }
+};
+
+/* ════ PET ════ */
+function loadPetState() {
+  renderPet(); buildCareBtns();
+  document.getElementById('ptsNum').textContent = UD.pet?.pts || 0;
+  setInterval(() => {
+    if (!UD.pet) return;
+    COMP[UD.pet.type].stats.forEach(r => { UD.pet.stats[r[1]] = Math.max(0, (UD.pet.stats[r[1]] || 0) - 1.5); });
+    renderPet();
+  }, 10000);
+}
+function renderPet() {
+  const p = UD.pet; if (!p) return;
+  const c = COMP[p.type], lv = p.level;
+  const ee = document.getElementById('petEmoji'), ne = c.stages[lv];
+  if (ee.textContent !== ne) { ee.textContent = ne; ee.classList.remove('grow'); void ee.offsetWidth; ee.classList.add('grow'); }
+  document.getElementById('petNameD').textContent   = p.name;
+  document.getElementById('petTypeD').textContent   = c.label;
+  document.getElementById('petStatusD').textContent = c.statuses[lv];
+  document.getElementById('lvRow').innerHTML = c.stages.map((_,i) => `<span class="lv-star ${i<=lv?'on':''}">⭐</span>`).join('');
+  document.getElementById('statsBox').innerHTML = c.stats.map(([ico,k,,fill]) =>
+    `<div class="sg"><span class="si">${ico}</span><div class="st"><div class="sf ${fill}" style="width:${Math.min(100,p.stats[k]||0)}%"></div></div></div>`
+  ).join('');
+}
+function buildCareBtns() {
+  if (!UD.pet) return;
+  document.getElementById('careBtns').innerHTML = COMP[UD.pet.type].actions.map(a =>
+    `<button class="cb ${a.cls}" id="cb-${a.id}" onclick="docare('${a.id}')">${a.label}<span class="cost-tag">${a.cost}점</span></button>`
+  ).join('');
+  updateCareBtns();
+}
+function updateCareBtns() {
+  if (!UD.pet) return;
+  COMP[UD.pet.type].actions.forEach(a => {
+    const b = document.getElementById('cb-' + a.id);
+    if (b) b.disabled = (UD.pet.pts || 0) < a.cost;
+  });
+}
+async function docare(id) {
+  const p = UD.pet; if (!p) return;
+  const a = COMP[p.type].actions.find(x => x.id === id);
+  if (!a || (p.pts || 0) < a.cost) { toast('😅 포인트 부족! 퀴즈를 풀거나 인증해요!'); return; }
+  p.pts -= a.cost; p.stats[a.stat] = Math.min(100, (p.stats[a.stat] || 0) + a.add); p.growScore = (p.growScore || 0) + a.grow;
+  await savePet(); updatePtsDisplay(); renderPet(); updateCareBtns(); toast(a.label + ' 했어요!'); checkGrowth();
+}
+function checkGrowth() {
+  const p = UD.pet; if (!p) return;
+  const c = COMP[p.type], max = c.stages.length - 1;
+  if (p.level < max && p.growScore >= c.growPts[p.level + 1]) {
+    p.level++; savePet(); renderPet();
+    setTimeout(() => { toast('🌟 ' + p.name + '이(가) ' + c.names[p.level] + '(으)로 성장!'); particles(window.innerWidth/2, window.innerHeight/3, ['🌟','✨','🎉','💫','⭐','🎊'], 16); }, 300);
+  }
+}
+async function savePet() {
+  if (!CU || !UD?.pet) return;
+  await db.collection('users').doc(CU.uid).update({ pet: UD.pet });
+}
+function updatePtsDisplay() {
+  const el = document.getElementById('ptsNum');
+  el.textContent = UD.pet?.pts || 0;
+  el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 400);
+  updateCareBtns();
+}
+async function addPoints(n) {
+  UD.pet.pts = (UD.pet.pts || 0) + n;
+  await savePet(); updatePtsDisplay();
+  particles(window.innerWidth / 2, 200, ['✨','🌟','💫'], 8);
+}
+
+/* ════ DAILY RECORD ════ */
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+async function getDailyRecord() {
+  const snap = await db.collection('userDaily').doc(CU.uid + '_' + todayKey()).get();
+  return snap.exists ? snap.data() : { recordingCount: 0, completedPassages: [], meditationDone: false };
+}
+async function setDailyField(updates) {
+  await db.collection('userDaily').doc(CU.uid + '_' + todayKey()).set(updates, { merge: true });
+}
+
+/* ════ GARDEN INIT ════ */
+async function initGarden() {
+  updateActivityUI();
+  loadTodayPassages();
+}
+async function updateActivityUI() {
+  const dr = await getDailyRecord();
+  const recBadge = document.getElementById('recBadge');
+  recBadge.textContent = '오늘 ' + dr.recordingCount + ' / 3회 · ' + (dr.recordingCount * 10) + '점';
+  recBadge.className = 'daily-badge' + (dr.recordingCount >= 3 ? ' full' : '');
+  const medBadge = document.getElementById('medBadge');
+  medBadge.textContent = '오늘 ' + (dr.meditationDone ? 1 : 0) + ' / 1회 · ' + (dr.meditationDone ? 10 : 0) + '점';
+  medBadge.className = 'daily-badge' + (dr.meditationDone ? ' full' : '');
+  if (dr.recordingCount >= 3)
+    document.getElementById('recArea').innerHTML = '<div class="rec-status" style="color:#4a9a50">🎉 오늘 녹음 인증 완료! 내일 또 해요!</div>';
+  if (dr.meditationDone)
+    document.getElementById('medArea').innerHTML = '<div class="med-approved">✅ 오늘 묵상 인증 완료!</div>';
+}
+
+/* ════ TODAY PASSAGES ════ */
+let todayPassages = [], curPasIdx = 0, curQList = [], curQIdx = 0, curPassageRef = '';
+
+async function loadTodayPassages() {
+  document.getElementById('bibleRef').textContent = '로딩 중...';
+  document.getElementById('passageText').innerHTML = '<div class="loading-txt">📖 말씀 불러오는 중...</div>';
+  document.getElementById('bibleActions').innerHTML = '';
+  document.getElementById('pNavBar').style.display = 'none';
+  const snap = await db.collection('dailyConfig').doc(todayKey()).get();
+  const dr   = await getDailyRecord();
+  const done = dr.completedPassages || [];
+  if (snap.exists && snap.data().passages && snap.data().passages.length > 0) {
+    todayPassages = snap.data().passages;
+    if (todayPassages.length > 1) { document.getElementById('pNavBar').style.display = 'flex'; renderPNav(done); }
+    curPasIdx = todayPassages.findIndex(p => !done.includes(p.ref));
+    if (curPasIdx === -1) { showAllDone(); return; }
+    loadPassage(todayPassages[curPasIdx]);
+  } else {
+    todayPassages = [];
+    loadRandomPassage();
+  }
+}
+function renderPNav(done) {
+  document.getElementById('pNavBar').innerHTML = todayPassages.map((p, i) =>
+    `<button class="p-nav-btn ${done.includes(p.ref)?'done':''} ${i===curPasIdx?'cur':''}" onclick="jumpPassage(${i})">${done.includes(p.ref)?'✅ ':''}${p.ref}</button>`
+  ).join('');
+}
+async function jumpPassage(idx) {
+  const dr = await getDailyRecord();
+  if ((dr.completedPassages || []).includes(todayPassages[idx].ref)) { toast('이미 완료한 말씀이에요!'); return; }
+  curPasIdx = idx; renderPNav(dr.completedPassages || []); loadPassage(todayPassages[idx]);
+}
+
+async function loadPassage(pInfo) {
+  document.getElementById('bibleRef').textContent = '로딩 중...';
+  document.getElementById('passageText').innerHTML = '<div class="loading-txt">📖 말씀 불러오는 중...</div>';
+  document.getElementById('bibleActions').innerHTML = '';
+  try {
+    let passage, questions;
+    if (pInfo.customQuestions && pInfo.customQuestions.length > 0) {
+      const res = await callClaude(`성경 ${pInfo.ref}의 내용을 아이들이 이해하기 쉬운 한국어로 제공해주세요. JSON만: {"passage":"구절 전문"}`);
+      passage = JSON.parse(res).passage;
+      questions = pInfo.customQuestions;
+    } else {
+      const res = await callClaude(`성경 ${pInfo.ref || pInfo.book + ' ' + pInfo.chapter + '장'}의 연속된 구절 4~6개를 쉬운 한국어로 제공하고, 그 구절을 읽어야 답할 수 있는 이해력 퀴즈 3개를 만들어주세요. JSON만: {"ref":"책이름 장:절-절","passage":"구절 전문","questions":[{"q":"질문","opts":["①","②","③","④"],"ans":0}]}`);
+      const parsed = JSON.parse(res);
+      passage = parsed.passage; questions = parsed.questions;
+      if (parsed.ref) pInfo.ref = parsed.ref;
+    }
+    curPassageRef = pInfo.ref || pInfo.book + ' ' + pInfo.chapter + '장';
+    curQList = questions; curQIdx = 0;
+    document.getElementById('bibleRef').textContent = curPassageRef;
+    document.getElementById('passageText').textContent = passage;
+    document.getElementById('bibleActions').innerHTML = '<button class="read-done-btn" onclick="startQuiz()">📖 다 읽었어요! 퀴즈 풀기 →</button>';
+  } catch (e) {
+    document.getElementById('passageText').innerHTML = '<div class="loading-txt">⚠️ 실패! 다시 시도해요</div>';
+    document.getElementById('bibleActions').innerHTML = '<button class="next-p-btn" onclick="loadTodayPassages()">🔄 다시 불러오기</button>';
+  }
+}
+async function loadRandomPassage() {
+  const books = ['창세기','시편','잠언','이사야','마태복음','마가복음','누가복음','요한복음','사도행전','로마서','에베소서','빌립보서','야고보서','요한일서'];
+  try {
+    const res = await callClaude(`성경 ${books[Math.floor(Math.random()*books.length)]}에서 연속 구절 4~6개를 쉬운 한국어로 제공하고 이해력 퀴즈 3개를 만들어주세요. JSON만: {"ref":"책이름 장:절-절","passage":"구절 전문","questions":[{"q":"질문","opts":["①","②","③","④"],"ans":0}]}`);
+    const parsed = JSON.parse(res);
+    curPassageRef = parsed.ref; curQList = parsed.questions; curQIdx = 0;
+    document.getElementById('bibleRef').textContent = parsed.ref;
+    document.getElementById('passageText').textContent = parsed.passage;
+    document.getElementById('bibleActions').innerHTML = '<button class="read-done-btn" onclick="startQuiz()">📖 다 읽었어요! 퀴즈 풀기 →</button>';
+  } catch (e) {
+    document.getElementById('passageText').innerHTML = '<div class="loading-txt">⚠️ 실패!</div>';
+    document.getElementById('bibleActions').innerHTML = '<button class="next-p-btn" onclick="loadRandomPassage()">🔄 다시</button>';
+  }
+}
+function showAllDone() {
+  document.getElementById('bibleRef').textContent = '완료 🎉';
+  document.getElementById('passageText').innerHTML = '';
+  document.getElementById('bibleActions').innerHTML = '<div class="all-done-banner"><div style="font-size:2.5rem">🎉</div><p style="font-size:1.1rem;color:#4a7a4a;margin-top:6px">오늘의 말씀을 모두 읽었어요!<br>내일 또 만나요 🌿</p></div>';
+}
+
+/* ════ QUIZ ════ */
+function startQuiz() { curQIdx = 0; renderQ(); }
+function renderQ() {
+  const q = curQList[curQIdx];
+  document.getElementById('bibleActions').innerHTML =
+    `<div class="quiz-zone">
+      <div class="quiz-prog">문제 ${curQIdx+1} / ${curQList.length}</div>
+      <div class="quiz-q">${q.q}</div>
+      <div class="opts-grid" id="optsGrid">
+        ${q.opts.map((o,i) => `<button class="opt-btn" onclick="answerQ(${i},this)">${o}</button>`).join('')}
+      </div>
+      <div class="quiz-result" id="qRes"></div>
+    </div>`;
+}
+async function answerQ(idx, btn) {
+  const q = curQList[curQIdx];
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  document.querySelectorAll('.opt-btn')[q.ans].classList.add('correct');
+  const ok = idx === q.ans;
+  const res = document.getElementById('qRes');
+  if (ok) {
+    btn.classList.add('correct'); await addPoints(2);
+    const r = btn.getBoundingClientRect(); particles(r.left + r.width/2, r.top, ['✨','🌟','💫','⭐'], 8);
+    res.textContent = '🎉 정답이에요! +2점!'; res.className = 'quiz-result ok';
+  } else {
+    btn.classList.add('wrong');
+    res.textContent = '❌ 아쉬워요! 정답은 "' + q.opts[q.ans] + '"예요!'; res.className = 'quiz-result fail';
+  }
+  await saveQuizRecord(q, idx, ok);
+  setTimeout(async () => {
+    const qz = document.querySelector('.quiz-zone'); if (!qz) return;
+    const isLastQ = curQIdx >= curQList.length - 1;
+    const nb = document.createElement('button');
+    if (!isLastQ) {
+      nb.className = 'next-q-btn'; nb.textContent = '다음 문제 →';
+      nb.onclick = () => { curQIdx++; renderQ(); };
+    } else {
+      if (todayPassages.length > 0) {
+        await setDailyField({ completedPassages: firebase.firestore.FieldValue.arrayUnion(curPassageRef) });
+      }
+      const dr = await getDailyRecord();
+      const done = dr.completedPassages || [];
+      const nextIdx = todayPassages.findIndex((p, i) => i > curPasIdx && !done.includes(p.ref));
+      if (todayPassages.length > 0 && nextIdx !== -1) {
+        nb.className = 'next-p-btn'; nb.textContent = '📖 다음 말씀: ' + todayPassages[nextIdx].ref + ' →';
+        nb.onclick = async () => { curPasIdx = nextIdx; renderPNav((await getDailyRecord()).completedPassages || []); loadPassage(todayPassages[nextIdx]); };
+      } else if (todayPassages.length > 0) {
+        nb.className = 'next-p-btn'; nb.textContent = '🎉 오늘 말씀 완료!'; nb.onclick = showAllDone;
+      } else {
+        nb.className = 'next-p-btn'; nb.textContent = '📖 다음 성경 읽기'; nb.onclick = loadRandomPassage;
+      }
+    }
+    qz.appendChild(nb);
+  }, 400);
+}
+async function saveQuizRecord(q, userAns, ok) {
+  if (!CU) return;
+  try {
+    await db.collection('quizHistory').doc(CU.uid).collection('records').add({
+      ref: curPassageRef, question: q.q, opts: q.opts, correctAns: q.ans, userAns, isCorrect: ok,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection('users').doc(CU.uid).update({
+      totalQuizzes: firebase.firestore.FieldValue.increment(1),
+      correctCount:  firebase.firestore.FieldValue.increment(ok ? 1 : 0)
+    });
+    UD.totalQuizzes = (UD.totalQuizzes || 0) + 1;
+    if (ok) UD.correctCount = (UD.correctCount || 0) + 1;
+  } catch (e) {}
+}
+
+/* ════ RECORDING ════ */
+let mediaRec = null, recChunks = [], recStream = null, recBlob = null;
+let recTimerInt = null, recSecs = 0, recState = 'idle';
+
+async function toggleRec() {
+  const dr = await getDailyRecord();
+  if (dr.recordingCount >= 3) { toast('오늘 3회 인증 완료!'); return; }
+  if (recState === 'idle') startRec();
+  else if (recState === 'recording') stopRec();
+}
+async function startRec() {
+  try {
+    recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRec = new MediaRecorder(recStream); recChunks = [];
+    mediaRec.ondataavailable = e => { if (e.data.size > 0) recChunks.push(e.data); };
+    mediaRec.onstop = () => { recBlob = new Blob(recChunks, { type: 'audio/webm' }); showRecPreview(); };
+    mediaRec.start(100); recState = 'recording'; recSecs = 0;
+    const btn = document.getElementById('recBtn');
+    btn.className = 'rec-btn recording'; btn.textContent = '⏹️';
+    document.getElementById('recStatus').textContent = '녹음 중... (버튼을 눌러 중지)';
+    const wf = document.createElement('div'); wf.className = 'waveform';
+    wf.innerHTML = '<div class="wave-bar"></div>'.repeat(5);
+    document.getElementById('recArea').insertBefore(wf, document.getElementById('recStatus'));
+    const timerEl = document.createElement('div'); timerEl.className = 'rec-timer'; timerEl.id = 'recTimer'; timerEl.textContent = '00:00';
+    document.getElementById('recArea').insertBefore(timerEl, document.getElementById('recStatus'));
+    recTimerInt = setInterval(() => {
+      recSecs++;
+      document.getElementById('recTimer').textContent = String(Math.floor(recSecs/60)).padStart(2,'0') + ':' + String(recSecs%60).padStart(2,'0');
+    }, 1000);
+  } catch (e) { toast('🎤 마이크 권한이 필요해요!'); }
+}
+function stopRec() {
+  if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
+  recStream?.getTracks().forEach(t => t.stop());
+  clearInterval(recTimerInt); recState = 'preview';
+}
+function showRecPreview() {
+  const url = URL.createObjectURL(recBlob);
+  document.getElementById('recArea').innerHTML =
+    `<audio class="rec-audio" controls src="${url}"></audio>
+    <div style="display:flex;gap:8px">
+      <button class="submit-rec-btn" id="submitRecBtn" onclick="submitRec()" ${recSecs<5?'disabled':''}>✅ 인증하기 (+10점)</button>
+      <button class="retry-btn" onclick="resetRec()">다시 녹음</button>
+    </div>
+    <div class="rec-status">${recSecs < 5 ? '⚠️ 5초 이상 녹음해야 해요 (현재 '+recSecs+'초)' : '✅ 제출 가능 ('+recSecs+'초)'}</div>`;
+}
+async function submitRec() {
+  const dr = await getDailyRecord();
+  if (dr.recordingCount >= 3) { toast('오늘 3회 모두 완료!'); return; }
+  if (!recBlob) { toast('녹음 파일이 없어요!'); return; }
+  const btn = document.getElementById('submitRecBtn');
+  btn.disabled = true; btn.textContent = '인증 중...';
+  try {
+    const n = dr.recordingCount + 1;
+    // Storage 없이 Firestore에 인증 기록만 저장
+    await setDailyField({ recordingCount: n });
+    await db.collection('recordings').add({
+      uid: CU.uid, username: UD.username,
+      duration: recSecs, count: n,
+      date: todayKey(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await addPoints(10);
+    toast('🎙️ 인증 완료! +10점 (오늘 ' + n + '/3회)');
+    particles(window.innerWidth/2, 300, ['🎙️','✨','🌟'], 10);
+    await updateActivityUI();
+    resetRec();
+  } catch (e) { btn.disabled = false; btn.textContent = '✅ 인증하기 (+10점)'; toast('오류: ' + e.message); }
+}
+function resetRec() {
+  recBlob = null; recState = 'idle'; recSecs = 0;
+  document.getElementById('recArea').innerHTML =
+    '<button class="rec-btn idle" id="recBtn" onclick="toggleRec()">🎙️</button>' +
+    '<div class="rec-status" id="recStatus">버튼을 누르고 성경을 소리 내어 읽어요</div>';
+}
+
+/* ════ MEDITATION PHOTO ════ */
+let selectedPhotoFile = null;
+function onPhotoSelected(e) {
+  const file = e.target.files[0]; if (!file) return;
+  selectedPhotoFile = file;
+  document.getElementById('photoPreview').src = URL.createObjectURL(file);
+  document.getElementById('photoLabel').style.display = 'none';
+  document.getElementById('photoPreviewWrap').style.display = 'block';
+}
+function resetPhoto() {
+  selectedPhotoFile = null;
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoLabel').style.display = 'flex';
+  document.getElementById('photoPreviewWrap').style.display = 'none';
+}
+async function submitMeditation() {
+  const dr = await getDailyRecord();
+  if (dr.meditationDone) { toast('오늘 이미 제출했어요!'); return; }
+  if (!selectedPhotoFile) { toast('사진을 선택해요!'); return; }
+  const btn = document.getElementById('submitPhotoBtn');
+  btn.disabled = true; btn.textContent = '압축 중...';
+  try {
+    // Canvas로 이미지 압축 (Storage 없이 Firestore에 저장)
+    const base64 = await compressImage(selectedPhotoFile, 600, 0.55);
+    btn.textContent = '저장 중...';
+    await db.collection('meditations').add({
+      uid: CU.uid, username: UD.username,
+      photoBase64: base64,
+      status: 'pending',
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await setDailyField({ meditationDone: true });
+    document.getElementById('medStatusMsg').innerHTML = '<div class="med-pending">⏳ 관리자 확인 중... 승인 시 +10점</div>';
+    document.getElementById('photoPreviewWrap').style.display = 'none';
+    document.getElementById('photoLabel').style.display = 'none';
+    toast('📷 묵상 사진 제출 완료!');
+    await updateActivityUI();
+  } catch (e) { btn.disabled = false; btn.textContent = '✅ 제출하기 (+10점)'; toast('오류: ' + e.message); }
+}
+
+// 이미지 압축 함수 (canvas 사용)
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const ratio = Math.min(maxWidth / img.width, maxWidth / img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+/* ════ BIBLE READER ════ */
+const BIBLE = {
+  old:[{n:'창세기',ch:50},{n:'출애굽기',ch:40},{n:'레위기',ch:27},{n:'민수기',ch:36},{n:'신명기',ch:34},{n:'여호수아',ch:24},{n:'사사기',ch:21},{n:'룻기',ch:4},{n:'사무엘상',ch:31},{n:'사무엘하',ch:24},{n:'열왕기상',ch:22},{n:'열왕기하',ch:25},{n:'역대상',ch:29},{n:'역대하',ch:36},{n:'에스라',ch:10},{n:'느헤미야',ch:13},{n:'에스더',ch:10},{n:'욥기',ch:42},{n:'시편',ch:150},{n:'잠언',ch:31},{n:'전도서',ch:12},{n:'아가',ch:8},{n:'이사야',ch:66},{n:'예레미야',ch:52},{n:'예레미야애가',ch:5},{n:'에스겔',ch:48},{n:'다니엘',ch:12},{n:'호세아',ch:14},{n:'요엘',ch:3},{n:'아모스',ch:9},{n:'오바댜',ch:1},{n:'요나',ch:4},{n:'미가',ch:7},{n:'나훔',ch:3},{n:'하박국',ch:3},{n:'스바냐',ch:3},{n:'학개',ch:2},{n:'스가랴',ch:14},{n:'말라기',ch:4}],
+  new:[{n:'마태복음',ch:28},{n:'마가복음',ch:16},{n:'누가복음',ch:24},{n:'요한복음',ch:21},{n:'사도행전',ch:28},{n:'로마서',ch:16},{n:'고린도전서',ch:16},{n:'고린도후서',ch:13},{n:'갈라디아서',ch:6},{n:'에베소서',ch:6},{n:'빌립보서',ch:4},{n:'골로새서',ch:4},{n:'데살로니가전서',ch:5},{n:'데살로니가후서',ch:3},{n:'디모데전서',ch:6},{n:'디모데후서',ch:4},{n:'디도서',ch:3},{n:'빌레몬서',ch:1},{n:'히브리서',ch:13},{n:'야고보서',ch:5},{n:'베드로전서',ch:5},{n:'베드로후서',ch:3},{n:'요한일서',ch:5},{n:'요한이서',ch:1},{n:'요한삼서',ch:1},{n:'유다서',ch:1},{n:'요한계시록',ch:22}]
+};
+let selTes = 'old', selBk = null, selCh = 1;
+const chCache = {};
+function setTestament(t, btn) { selTes=t; selBk=null; selCh=1; document.querySelectorAll('.t-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.getElementById('chNavCard').style.display='none'; document.getElementById('readerCard').style.display='none'; renderBookGrid(); }
+function renderBookGrid() { document.getElementById('bookGrid').innerHTML = BIBLE[selTes].map((b,i)=>`<button class="book-btn ${selBk===i?'ab':''}" onclick="selectBook(${i})">${b.n}</button>`).join(''); }
+function selectBook(i) { selBk=i; selCh=1; renderBookGrid(); const b=BIBLE[selTes][i]; const sel=document.getElementById('chSel'); sel.innerHTML=Array.from({length:b.ch},(_,j)=>`<option value="${j+1}">${j+1}장</option>`).join(''); sel.value=1; document.getElementById('chNavCard').style.display='block'; document.getElementById('readerCard').style.display='block'; document.getElementById('chTitle').textContent=b.n+' '+selCh+'장'; fetchChapter(b.n,1); }
+function changeChapter(d) { if(selBk===null)return; const b=BIBLE[selTes][selBk]; selCh=Math.max(1,Math.min(b.ch,selCh+d)); document.getElementById('chSel').value=selCh; loadChapter(); }
+function loadChapter() { if(selBk===null)return; selCh=parseInt(document.getElementById('chSel').value); document.getElementById('chTitle').textContent=BIBLE[selTes][selBk].n+' '+selCh+'장'; fetchChapter(BIBLE[selTes][selBk].n,selCh); }
+async function fetchChapter(book, ch) {
+  const key = book + '_' + ch;
+  if (chCache[key]) { renderCh(chCache[key]); return; }
+  document.getElementById('readerBox').innerHTML = '<div class="loading-txt">📖 불러오는 중...</div>';
+  try {
+    const res = await callClaude('성경 ' + book + ' ' + ch + '장의 모든 절을 한국어(개역개정 참고)로 제공해주세요. JSON만: {"verses":[{"v":1,"text":"내용"},...]}');
+    chCache[key] = JSON.parse(res).verses; renderCh(chCache[key]);
+  } catch (e) { document.getElementById('readerBox').innerHTML = '<div class="loading-txt">⚠️ 실패!</div>'; }
+}
+function renderCh(verses) { document.getElementById('readerBox').innerHTML = verses.map(v=>`<span class="verse"><span class="verse-num">${v.v}</span>${v.text}</span>`).join(''); }
+
+/* ════ HISTORY ════ */
+async function loadHistory() {
+  const t=UD.totalQuizzes||0, c=UD.correctCount||0, r=t>0?Math.round(c/t*100):0;
+  document.getElementById('histStats').innerHTML=`
+    <div class="h-stat"><div class="h-stat-n">${t}</div><div class="h-stat-l">총 문제</div></div>
+    <div class="h-stat"><div class="h-stat-n" style="color:#4a9a50">${c}</div><div class="h-stat-l">정답</div></div>
+    <div class="h-stat"><div class="h-stat-n" style="color:#e07050">${t-c}</div><div class="h-stat-l">오답</div></div>
+    <div class="h-stat"><div class="h-stat-n" style="color:#8a5ac0">${r}%</div><div class="h-stat-l">정답률</div></div>`;
+  try {
+    const snap = await db.collection('quizHistory').doc(CU.uid).collection('records').orderBy('timestamp','desc').limit(50).get();
+    if (snap.empty) { document.getElementById('histList').innerHTML='<div class="empty-txt">📖 퀴즈를 풀면 여기에 기록돼요!</div>'; return; }
+    document.getElementById('histList').innerHTML = snap.docs.map(d => {
+      const r=d.data(), ts=r.timestamp?.toDate?r.timestamp.toDate():new Date();
+      const ds=ts.getFullYear()+'.'+String(ts.getMonth()+1).padStart(2,'0')+'.'+String(ts.getDate()).padStart(2,'0')+' '+String(ts.getHours()).padStart(2,'0')+':'+String(ts.getMinutes()).padStart(2,'0');
+      const ua=r.opts?.[r.userAns]||'', ca=r.opts?.[r.correctAns]||'';
+      return `<div class="hist-item ${r.isCorrect?'ok':'ng'}"><div class="h-ico">${r.isCorrect?'✅':'❌'}</div><div style="flex:1"><span class="h-ref">📖 ${r.ref}</span><div class="h-q">${r.question}</div><div class="h-ans">${r.isCorrect?`<span class="ok">✔ ${ca}</span>`:`<span class="ng">${ua}</span> → <span class="ok">정답: ${ca}</span>`}</div><div class="h-date">${ds}</div></div></div>`;
+    }).join('');
+  } catch (e) { document.getElementById('histList').innerHTML='<div class="empty-txt">⚠️ 실패</div>'; }
+}
+
+/* ════ ADMIN ════ */
+function switchAdminTab(n, btn) {
+  document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.a-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('adm-'+n).classList.add('active'); btn.classList.add('active');
+  if(n==='users') loadAdminUsers();
+  if(n==='daily') initDailyConfig();
+  if(n==='meds')  loadMeditations();
+}
+async function loadAdminUsers() {
+  try {
+    const snap = await db.collection('users').get();
+    document.getElementById('admTbody').innerHTML = snap.docs.map(d => {
+      const u={id:d.id,...d.data()}, p=u.pet, pe=p?COMP[p.type]?.stages[p.level||0]:'';
+      const rate=u.totalQuizzes>0?Math.round((u.correctCount||0)/u.totalQuizzes*100):0;
+      const cr=u.createdAt?.toDate?u.createdAt.toDate().toLocaleDateString('ko-KR'):'-';
+      return `<tr><td><b>${u.username}</b>${u.isAdmin?' 👑':''}</td><td>${p?`<span class="pet-badge">${pe} ${COMP[p.type]?.label}</span>`:'없음'}</td><td>${p?.name||'-'}</td><td>${p?'Lv.'+(p.level+1):'-'}</td><td>${p?.pts||0}점</td><td>${u.totalQuizzes||0}</td><td>${rate}%</td><td>${cr}</td><td>${u.isAdmin?'':'<button class="del-btn" onclick="delUser(\''+u.id+'\',\''+u.username+'\')">삭제</button>'}</td></tr>`;
+    }).join('');
+  } catch (e) { document.getElementById('admTbody').innerHTML='<tr><td colspan="9" class="empty-txt">⚠️ 실패</td></tr>'; }
+}
+async function delUser(uid, name) { if(!confirm('"'+name+'" 삭제?'))return; try{await db.collection('users').doc(uid).delete();toast('✅ 삭제 완료');loadAdminUsers();}catch(e){toast('삭제 실패!');} }
+
+/* ── 오늘의 말씀 설정 ── */
+let dpList = [];
+async function initDailyConfig() {
+  document.getElementById('todayLbl').textContent = todayKey();
+  renderDpBooks();
+  dpList = [];
+  const snap = await db.collection('dailyConfig').doc(todayKey()).get();
+  if (snap.exists && snap.data().passages) dpList = [...snap.data().passages];
+  renderDpList();
+}
+function renderDpBooks() {
+  const t=document.getElementById('dpTes').value, books=BIBLE[t];
+  const bSel=document.getElementById('dpBook');
+  bSel.innerHTML = books.map((b,i)=>`<option value="${i}">${b.n}</option>`).join('');
+  bSel.onchange = updateDpChap; updateDpChap();
+}
+function updateDpChap() {
+  const t=document.getElementById('dpTes').value, bi=parseInt(document.getElementById('dpBook').value);
+  document.getElementById('dpChap').innerHTML = Array.from({length:BIBLE[t][bi].ch},(_,i)=>`<option value="${i+1}">${i+1}장</option>`).join('');
+}
+function addDailyPassage() {
+  const t=document.getElementById('dpTes').value, bi=parseInt(document.getElementById('dpBook').value), ch=parseInt(document.getElementById('dpChap').value);
+  const ref=BIBLE[t][bi].n+' '+ch+'장';
+  if (dpList.find(p=>p.ref===ref)) { toast('이미 추가됐어요!'); return; }
+  dpList.push({ref, book:BIBLE[t][bi].n, chapter:ch, customQuestions:[]});
+  renderDpList();
+}
+function removeDp(i) { dpList.splice(i,1); renderDpList(); }
+function renderDpList() {
+  const el = document.getElementById('dpList');
+  if (!dpList.length) { el.innerHTML='<div style="color:#ccc;font-size:0.9rem;text-align:center;padding:12px">추가된 말씀이 없어요</div>'; return; }
+  el.innerHTML = dpList.map((p,i) => `
+    <div class="dp-item">
+      <div class="dp-item-hdr">
+        <span class="dp-ref-tag">📖 ${p.ref}</span>
+        <button class="dp-remove" onclick="removeDp(${i})">✕</button>
+      </div>
+      <div style="font-size:0.82rem;color:#aaa;margin-bottom:4px">${p.customQuestions?.length?'✅ 문제 '+p.customQuestions.length+'개 설정됨 (직접 제작)':'자동 생성 (AI)'}</div>
+      <button class="dp-toggle-btn" onclick="toggleQForm(${i})" id="qfbtn-${i}">❓ ${p.customQuestions?.length?'문제 수정':'문제 직접 추가'}</button>
+      <div id="qf-${i}" style="display:none"></div>
+    </div>`).join('');
+}
+function toggleQForm(i) {
+  const el=document.getElementById('qf-'+i);
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+  if (el.style.display==='block') renderQForm(i);
+}
+function renderQForm(i) {
+  const qs=dpList[i].customQuestions||[];
+  let html = qs.map((q,qi) => `
+    <div class="cqf" style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#7a7aaa;margin-bottom:4px">문제 ${qi+1}<button onclick="removeQ(${i},${qi})" style="background:none;border:none;color:#e07070;cursor:pointer;font-size:0.8rem">✕ 삭제</button></div>
+      <input class="cqf-input" placeholder="질문을 입력해요" value="${q.q}" onchange="updQ(${i},${qi},'q',this.value)">
+      <div class="cqf-opts">
+        ${q.opts.map((o,oi)=>`<input class="cqf-input" placeholder="보기 ${['①','②','③','④'][oi]}" value="${o}" onchange="updQ(${i},${qi},'o${oi}',this.value)">`).join('')}
+      </div>
+      정답: <select class="ans-sel" onchange="updQ(${i},${qi},'ans',parseInt(this.value))">
+        ${[0,1,2,3].map(n=>`<option value="${n}" ${q.ans===n?'selected':''}>${['①','②','③','④'][n]}번</option>`).join('')}
+      </select>
+    </div>`).join('');
+  html += `<button onclick="addQ(${i})" style="width:100%;background:#f0f5ff;border:2px dashed #c0d0f0;border-radius:10px;padding:7px;color:#7a90d0;font-size:0.88rem">+ 문제 추가 (최대 3개)</button>`;
+  document.getElementById('qf-'+i).innerHTML = html;
+}
+function addQ(i) { if((dpList[i].customQuestions||[]).length>=3){toast('문제는 최대 3개!');return;} if(!dpList[i].customQuestions)dpList[i].customQuestions=[]; dpList[i].customQuestions.push({q:'',opts:['','','',''],ans:0}); renderQForm(i); }
+function removeQ(i,qi) { dpList[i].customQuestions.splice(qi,1); renderQForm(i); }
+function updQ(i,qi,f,v) { if(f==='q')dpList[i].customQuestions[qi].q=v; else if(f==='ans')dpList[i].customQuestions[qi].ans=v; else{const oi=parseInt(f[1]);dpList[i].customQuestions[qi].opts[oi]=v;} }
+async function saveDailyConfig() {
+  for (const p of dpList) {
+    for (const q of (p.customQuestions||[])) {
+      if (!q.q || q.opts.some(o=>!o)) { toast('"'+p.ref+'" 문제 내용을 모두 채워주세요!'); return; }
+    }
+  }
+  await db.collection('dailyConfig').doc(todayKey()).set({ passages:dpList, setBy:UD.username, updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+  toast('💾 오늘의 말씀 저장 완료!'); particles(window.innerWidth/2,200,['📖','✨','🌟'],10);
+}
+
+/* ── 묵상 사진 확인 ── */
+async function loadMeditations() {
+  try {
+    const snap = await db.collection('meditations').orderBy('submittedAt','desc').limit(50).get();
+    if (snap.empty) { document.getElementById('medsList').innerHTML='<div class="empty-txt">제출된 묵상 사진이 없어요</div>'; return; }
+    document.getElementById('medsList').innerHTML = snap.docs.map(d => {
+      const m=d.data(), ts=m.submittedAt?.toDate?m.submittedAt.toDate():new Date();
+      const ds=ts.toLocaleDateString('ko-KR')+' '+ts.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="med-item">
+        <img class="med-photo" src="${m.photoBase64||''}" alt="" onclick="if(m.photoBase64)openLb(m.photoBase64)">
+        <div style="flex:1">
+          <div class="med-user">👤 ${m.username}</div>
+          <div class="med-date">${ds}</div>
+          ${m.status==='pending'?`<div class="med-actions"><button class="approve-btn" onclick="approveMed('${d.id}','${m.uid}')">✅ 승인 (+10점)</button><button class="reject-btn" onclick="rejectMed('${d.id}')">❌ 반려</button></div>`:''}
+          ${m.status==='approved'?'<span class="badge-approved">✅ 승인됨</span>':''}
+          ${m.status==='rejected'?'<span class="badge-rejected">❌ 반려됨</span>':''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) { document.getElementById('medsList').innerHTML='<div class="empty-txt">⚠️ 실패</div>'; }
+}
+async function approveMed(docId, uid) {
+  await db.collection('meditations').doc(docId).update({status:'approved',reviewedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  const uSnap = await db.collection('users').doc(uid).get();
+  if (uSnap.exists) { const pet=uSnap.data().pet; if(pet){pet.pts=(pet.pts||0)+10;await db.collection('users').doc(uid).update({pet});} }
+  toast('✅ 승인 완료! +10점 지급'); loadMeditations();
+}
+async function rejectMed(docId) {
+  if (!confirm('반려하시겠어요?')) return;
+  await db.collection('meditations').doc(docId).update({status:'rejected'});
+  toast('❌ 반려 완료'); loadMeditations();
+}
+function openLb(url) { document.getElementById('lb-img').src=url; document.getElementById('lightbox').classList.add('open'); }
+
+/* ════ TAB NAV ════ */
+function switchTab(n, btn) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active'); btn.classList.add('active');
+  if(n==='history') loadHistory();
+  if(n==='admin') { loadAdminUsers(); initDailyConfig(); }
+  if(n==='bible' && selBk===null) renderBookGrid();
+}
+
+/* ════ CLAUDE API HELPER ════ */
+async function callClaude(prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, messages: [{role:'user',content:prompt}] })
+  });
+  const data = await res.json();
+  return data.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim();
+}
+
+/* ════ UTILS ════ */
+function particles(x,y,emojis,n){for(let i=0;i<n;i++){const p=document.createElement('div');p.className='ptcl';p.textContent=emojis[i%emojis.length];const dx=(Math.random()-.5)*160,dy=-(Math.random()*110+40);p.style.cssText=`left:${x}px;top:${y}px;--dx:${dx}px;--dy:${dy}px;animation-delay:${i*0.05}s`;document.body.appendChild(p);setTimeout(()=>p.remove(),1300);}}
+function toast(msg){const w=document.getElementById('toast-wrap');const t=document.createElement('div');t.className='toast';t.textContent=msg;w.appendChild(t);setTimeout(()=>t.remove(),2700);}
+</script>
+</body>
+</html>
