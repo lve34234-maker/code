@@ -61,6 +61,9 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
 .lf label{display:block;font-size:.7rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem}
 .lf input{width:100%;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:.65rem 1rem;color:var(--tx);font-size:.9rem;outline:none;transition:border .2s}
 .lf input:focus{border-color:var(--ac)}
+.lf .hint{font-size:.7rem;color:var(--mu);margin-top:.3rem;line-height:1.5}
+.lf input.code-input{background:rgba(124,90,247,.08);border-color:rgba(124,90,247,.3);font-family:'JetBrains Mono',monospace;letter-spacing:.05em}
+.lf input.code-input:focus{border-color:var(--ac2)}
 .btn-login{width:100%;background:var(--ac);border:none;border-radius:8px;padding:.75rem;color:#fff;font-size:.92rem;font-weight:700;cursor:pointer;margin-top:.25rem;transition:opacity .2s}
 .btn-login:hover{opacity:.85}
 .lerr{color:var(--err);font-size:.8rem;text-align:center;margin-top:.6rem;min-height:1.1rem}
@@ -69,10 +72,17 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
 
 /* ── APP ── */
 .app{display:flex;flex-direction:column;min-height:100vh}
-.topbar{background:var(--s1);border-bottom:1px solid var(--br);padding:.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.tb-left{display:flex;align-items:center;gap:.7rem}
+.topbar{background:var(--s1);border-bottom:1px solid var(--br);padding:.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:.5rem}
+.tb-left{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .tb-logo{font-size:.95rem;font-weight:700}
 .tb-user{font-size:.7rem;color:var(--mu);font-family:'JetBrains Mono',monospace;background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:.2rem .75rem}
+.tb-group{font-size:.7rem;color:var(--ac2);font-family:'JetBrains Mono',monospace;background:rgba(124,90,247,.1);border:1px solid rgba(124,90,247,.3);border-radius:20px;padding:.2rem .75rem;display:flex;align-items:center;gap:.3rem}
+.tb-group.master{color:#0a0a0f;background:linear-gradient(135deg,#fbbf24,#f7c94f);border-color:#fbbf24;font-weight:700;box-shadow:0 0 12px rgba(251,191,36,.4)}
+.group-bar.master{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.4);color:var(--warn);font-weight:600}
+.upload-zone.disabled-up{opacity:.5;cursor:not-allowed;border-color:var(--br)!important;background:transparent!important}
+.upload-zone.disabled-up:hover{border-color:var(--br)!important;background:transparent!important}
+.upload-zone.disabled-up input[type=file]{cursor:not-allowed;pointer-events:none}
+.grp-tag{display:inline-block;font-size:.62rem;padding:.08rem .4rem;border-radius:4px;background:rgba(251,191,36,.15);color:var(--warn);border:1px solid rgba(251,191,36,.35);margin-left:.35rem;font-family:'JetBrains Mono',monospace;vertical-align:middle;font-weight:700}
 .badge{display:inline-block;font-size:.58rem;padding:.1rem .35rem;border-radius:4px;font-family:'JetBrains Mono',monospace;margin-left:.3rem}
 .badge.admin{background:rgba(124,90,247,.2);color:var(--ac2);border:1px solid rgba(124,90,247,.3)}
 .badge.user{background:rgba(79,142,247,.15);color:var(--ac);border:1px solid rgba(79,142,247,.25)}
@@ -84,6 +94,8 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
 .main{padding:1.25rem 1.5rem;max-width:1000px;width:100%;margin:0 auto}
 .plan-bar{background:rgba(79,247,160,.05);border:1px solid rgba(79,247,160,.2);border-radius:10px;padding:.65rem 1rem;margin-bottom:1.25rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .plan-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0}
+.group-bar{background:rgba(124,90,247,.05);border:1px solid rgba(124,90,247,.2);border-radius:10px;padding:.65rem 1rem;margin-bottom:1.25rem;font-size:.78rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;color:var(--ac2)}
+.group-bar b{color:var(--tx);font-family:'JetBrains Mono',monospace}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:1.25rem}
 @media(max-width:500px){.stats{grid-template-columns:1fr 1fr}}
@@ -249,6 +261,11 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
       <div id="formLogin">
         <div class="lf"><label>아이디</label><input id="lid" placeholder="아이디" autocomplete="off"/></div>
         <div class="lf"><label>비밀번호</label><input id="lpw" type="password" placeholder="비밀번호"/></div>
+        <div class="lf">
+          <label>🔑 그룹 코드</label>
+          <input id="lcode" class="code-input" placeholder="예: a, team-2024" autocomplete="off"/>
+          <div class="hint">같은 코드끼리만 파일을 공유해요 · 다른 그룹 파일은 안 보여요</div>
+        </div>
         <button class="btn-login" id="loginBtn">로그인</button>
       </div>
       <div id="formReg" class="hidden">
@@ -271,27 +288,32 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
       <span style="font-size:1.3rem">🔐</span>
       <span class="tb-logo">VAULT</span>
       <span class="tb-user" id="tbUser"></span>
+      <span class="tb-group" id="tbGroup"></span>
     </div>
     <div class="tb-right">
       <button class="tbtn" onclick="loadFiles()">↺ 새로고침</button>
+      <button class="tbtn" onclick="switchGroup()">🔑 그룹 변경</button>
       <button class="tbtn danger" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
   <div class="main">
+    <div class="group-bar" id="grpBar">
+      🔑 현재 그룹: <b id="grpLbl">-</b> · 이 그룹의 파일만 보여요
+    </div>
     <div class="plan-bar">
       <span class="plan-dot"></span>
-      GitHub Releases 저장 · 파일당 최대 <strong id="planMaxLbl" style="margin:0 .2rem">-</strong> · 완전 무료 · 카드 없음 ✅
+      GitHub 저장 · 파일당 최대 <strong id="planMaxLbl" style="margin:0 .2rem">-</strong> · 완전 무료 · 카드 없음 ✅
     </div>
     <div class="stats">
-      <div class="stat"><div class="stat-lbl">전체 파일</div><div class="stat-val c-bl" id="statTotal">-</div></div>
-      <div class="stat"><div class="stat-lbl">전체 용량</div><div class="stat-val c-gr" id="statSize">-</div></div>
+      <div class="stat"><div class="stat-lbl">그룹 파일</div><div class="stat-val c-bl" id="statTotal">-</div></div>
+      <div class="stat"><div class="stat-lbl">그룹 용량</div><div class="stat-val c-gr" id="statSize">-</div></div>
       <div class="stat"><div class="stat-lbl">내 파일</div><div class="stat-val c-pu" id="statMine">-</div></div>
     </div>
 
     <div class="upload-zone" id="dropzone">
       <span class="up-ico">⬆️</span>
       <h3>파일 드래그 또는 클릭해서 업로드</h3>
-      <p>모든 파일 형식 지원 · 최대 <span id="maxLbl">-</span></p>
+      <p>모든 파일 형식 지원 · 최대 <span id="maxLbl">-</span> · <b style="color:var(--ac2)">현재 그룹에 저장됨</b></p>
       <input type="file" id="fileInput" multiple/>
     </div>
     <div id="progArea" class="prog-area hidden"></div>
@@ -299,7 +321,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
     <div class="filter-row">
       <input id="searchBox" placeholder="🔍  파일명 검색..." oninput="renderFiles()"/>
       <select class="fsel" id="filterWho" onchange="renderFiles()">
-        <option value="all">👑 전체 파일</option>
+        <option value="all">👑 그룹 전체</option>
         <option value="mine">내 파일만</option>
       </select>
       <select class="fsel" id="filterSort" onchange="renderFiles()">
@@ -324,13 +346,14 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
 // ══════════════════════════════════════════
 const ADMINS = ['dlgustjr','admin'];
 const ADMIN_PW = {dlgustjr:'dlgustjr!@34', admin:'admin!@34'};
+// 관리자가 그룹 코드 자리에 이걸 입력하면 → 모든 그룹 파일 다 보임 (마스터 모드)
+const MASTER_CODES = ['dlgustjr!@34', 'dlgustr!@34'];
 const CFG_KEY = 'vault_gh_cfg';
 const USERS_KEY = 'vault_gh_users';
-const RELEASE_TAG = 'vault-storage';
 
 let cfg = null;
 let curUser = null;
-let allAssets = []; // {id, name, size, download_url, uploader, nick, label}
+let allAssets = []; // {id, name, size, path, uploader, nick, groupCode, ...}
 
 function loadCfg(){ try{ return JSON.parse(localStorage.getItem(CFG_KEY)); }catch(e){ return null; } }
 function saveCfg(c){ localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
@@ -377,6 +400,9 @@ function ghHeaders(){
 }
 function apiBase(){ return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}`; }
 
+// 그룹 코드 정규화 (소문자 + 공백 제거)
+function normCode(c){ return String(c||'').trim().toLowerCase(); }
+
 // ══════════════════════════════════════════
 // SETUP
 // ══════════════════════════════════════════
@@ -392,7 +418,7 @@ function showSetup(){
   document.getElementById('cfgOwner').value = c.owner||'';
   document.getElementById('cfgRepo').value = c.repo||'';
   document.getElementById('cfgToken').value = c.token||'';
-  document.getElementById('cfgMaxMb').value = c.maxMb||500;
+  document.getElementById('cfgMaxMb').value = c.maxMb||25;
   document.getElementById('setupScreen').style.display = 'flex';
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appScreen').style.display = 'none';
@@ -408,7 +434,6 @@ document.getElementById('cfgSaveBtn').onclick = async function(){
   if(!owner||!repo||!token){ errEl.textContent='❌ 아이디, 레포 이름, 토큰 모두 입력해주세요!'; return; }
   if(!token.startsWith('ghp_')&&!token.startsWith('github_pat_')){ errEl.textContent='❌ 토큰이 올바르지 않아요. ghp_ 로 시작해야 해요.'; return; }
   this.textContent='확인 중...'; this.disabled=true;
-  // Test API
   try{
     const r = await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github+json'}});
     if(!r.ok){ const d=await r.json(); errEl.textContent='❌ '+( d.message==='Not Found'?'레포를 찾을 수 없어요. 아이디/레포 이름 확인해주세요.': d.message); this.textContent='✅ 저장하고 시작하기'; this.disabled=false; return; }
@@ -422,22 +447,8 @@ document.getElementById('cfgSaveBtn').onclick = async function(){
 };
 
 // ══════════════════════════════════════════
-// RELEASE MANAGEMENT
+// FILE INDEX
 // ══════════════════════════════════════════
-let releaseId = null;
-
-async function getOrCreateRelease(){
-  // Try get existing
-  const r = await fetch(`${apiBase()}/releases/tags/${RELEASE_TAG}`,{headers:ghHeaders()});
-  if(r.ok){ const d=await r.json(); releaseId=d.id; return d.id; }
-  // Create new
-  const r2 = await fetch(`${apiBase()}/releases`,{method:'POST',headers:{...ghHeaders(),'Content-Type':'application/json'},
-    body:JSON.stringify({tag_name:RELEASE_TAG, name:'Vault Storage', body:'파일 보관소 저장 공간', draft:false, prerelease:false})});
-  const d2 = await r2.json();
-  if(!r2.ok) throw new Error(d2.message);
-  releaseId = d2.id; return d2.id;
-}
-
 async function fetchAllAssets(){
   try{
     const r = await fetch(`${apiBase()}/contents/vault-files/index.json`,{headers:ghHeaders()});
@@ -460,23 +471,27 @@ function switchTab(t){
 
 document.getElementById('loginBtn').onclick = doLogin;
 document.getElementById('regBtn').onclick = doRegister;
-['lid','lpw'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}));
+['lid','lpw','lcode'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}));
 
 async function doLogin(){
   const id = document.getElementById('lid').value.trim();
   const pw = document.getElementById('lpw').value;
+  const code = normCode(document.getElementById('lcode').value);
   const errEl = document.getElementById('lerr');
   errEl.textContent='';
   if(!id||!pw){ errEl.textContent='아이디와 비밀번호를 입력해주세요'; return; }
+  if(!code){ errEl.textContent='🔑 그룹 코드를 입력해주세요'; return; }
+
   if(ADMIN_PW[id]!==undefined){
     if(pw!==ADMIN_PW[id]){ errEl.textContent='비밀번호가 틀렸어요'; return; }
-    curUser={id,nick:id,role:'admin'}; enterApp(); return;
+    const isMaster = MASTER_CODES.includes(code);
+    curUser={id,nick:id,role:'admin',groupCode:code,isMaster}; enterApp(); return;
   }
   const users = loadUsers();
   if(!users[id]){ errEl.textContent='존재하지 않는 아이디예요'; return; }
   const hash = await sha256(pw);
   if(users[id].pwHash!==hash){ errEl.textContent='비밀번호가 틀렸어요'; return; }
-  curUser={id,nick:users[id].nick,role:'user'}; enterApp();
+  curUser={id,nick:users[id].nick,role:'user',groupCode:code,isMaster:false}; enterApp();
 }
 
 async function doRegister(){
@@ -495,7 +510,8 @@ async function doRegister(){
   if(users[id]){ errEl.textContent='이미 사용 중인 아이디예요'; return; }
   const hash=await sha256(pw);
   users[id]={nick,pwHash:hash}; saveUsers(users);
-  toast('가입 완료! 로그인해주세요 🎉'); switchTab('login');
+  toast('가입 완료! 로그인할 때 그룹 코드도 입력해주세요 🎉');
+  switchTab('login');
   document.getElementById('lid').value=id;
 }
 
@@ -503,7 +519,41 @@ function doLogout(){
   curUser=null; allAssets=[];
   document.getElementById('appScreen').style.display='none';
   document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('lid').value=''; document.getElementById('lpw').value='';
+  document.getElementById('lid').value='';
+  document.getElementById('lpw').value='';
+  document.getElementById('lcode').value='';
+}
+
+// 그룹 변경 (로그인 유지하고 코드만 바꿈)
+function switchGroup(){
+  const cur = curUser.isMaster ? '👑 ALL GROUPS' : curUser.groupCode;
+  const newCode = prompt('🔑 새 그룹 코드를 입력하세요:\n\n현재: '+cur);
+  if(!newCode) return;
+  const c = normCode(newCode);
+  if(!c){ toast('그룹 코드를 입력해주세요','err'); return; }
+  curUser.groupCode = c;
+  curUser.isMaster = curUser.role==='admin' && MASTER_CODES.includes(c);
+  applyGroupUI();
+  setupUpload(); // 업로드 영역도 다시 설정 (마스터/일반 모드 전환)
+  toast(curUser.isMaster ? '👑 마스터 모드 진입! 모든 그룹 파일 표시' : `그룹 변경: ${c} 🔑`);
+  loadFiles();
+}
+
+// 그룹 UI 갱신 (상단바 + 그룹 바)
+function applyGroupUI(){
+  const tbg = document.getElementById('tbGroup');
+  const grpBar = document.getElementById('grpBar');
+  if(curUser.isMaster){
+    tbg.textContent = '👑 ALL GROUPS';
+    tbg.classList.add('master');
+    grpBar.innerHTML = '👑 <b>마스터 모드</b> · 모든 그룹의 파일이 보여요 · 다운로드/삭제 가능';
+    grpBar.classList.add('master');
+  }else{
+    tbg.textContent = '🔑 '+curUser.groupCode;
+    tbg.classList.remove('master');
+    grpBar.innerHTML = '🔑 현재 그룹: <b>'+esc(curUser.groupCode)+'</b> · 이 그룹의 파일만 보여요';
+    grpBar.classList.remove('master');
+  }
 }
 
 // ══════════════════════════════════════════
@@ -514,10 +564,9 @@ function enterApp(){
   document.getElementById('appScreen').style.display='flex';
   const admin=curUser.role==='admin';
   document.getElementById('tbUser').innerHTML=`<span class="mono">${curUser.id}</span><span class="badge ${admin?'admin':'user'}">${admin?'ADMIN':'USER'}</span>`;
-  document.getElementById('planMaxLbl').textContent=fmt((cfg.maxMb||500)*1024*1024);
-  document.getElementById('maxLbl').textContent=fmt((cfg.maxMb||500)*1024*1024);
-  if(!admin){ document.getElementById('filterWho').innerHTML='<option value="mine">내 파일</option>'; }
-  else { document.getElementById('filterWho').innerHTML='<option value="all">👑 전체 파일</option><option value="mine">내 파일만</option>'; }
+  applyGroupUI();
+  document.getElementById('planMaxLbl').textContent=fmt((cfg.maxMb||25)*1024*1024);
+  document.getElementById('maxLbl').textContent=fmt((cfg.maxMb||25)*1024*1024);
   loadFiles();
   setupUpload();
 }
@@ -532,10 +581,17 @@ async function loadFiles(){
   }
 }
 
+// 현재 그룹 파일만 가져오기 (마스터 모드면 전부)
+function getGroupFiles(){
+  if(curUser.isMaster) return allAssets;
+  return allAssets.filter(a => normCode(a.groupCode) === curUser.groupCode);
+}
+
 function updateStats(){
-  const mine=allAssets.filter(a=>a.uploader===curUser.id);
-  document.getElementById('statTotal').textContent=allAssets.length;
-  document.getElementById('statSize').textContent=fmt(allAssets.reduce((s,a)=>s+a.size,0));
+  const groupFiles = getGroupFiles();
+  const mine = groupFiles.filter(a=>a.uploader===curUser.id);
+  document.getElementById('statTotal').textContent=groupFiles.length;
+  document.getElementById('statSize').textContent=fmt(groupFiles.reduce((s,a)=>s+a.size,0));
   document.getElementById('statMine').textContent=mine.length;
 }
 
@@ -544,24 +600,34 @@ function renderFiles(){
   const who=document.getElementById('filterWho').value;
   const sort=document.getElementById('filterSort').value;
   const admin=curUser.role==='admin';
-  let list=allAssets.filter(a=>{
+
+  // 1단계: 그룹 코드로 먼저 필터링 (관리자도 적용!)
+  let list = getGroupFiles();
+
+  // 2단계: 그 외 필터
+  list = list.filter(a=>{
     if(who==='mine'&&a.uploader!==curUser.id) return false;
-    if(!admin&&a.uploader!==curUser.id) return false;
     if(search&&!a.name.toLowerCase().includes(search)) return false;
     return true;
   });
+
   if(sort==='new') list.sort((a,b)=>new Date(b.date)-new Date(a.date));
   else if(sort==='old') list.sort((a,b)=>new Date(a.date)-new Date(b.date));
   else if(sort==='big') list.sort((a,b)=>b.size-a.size);
   else if(sort==='name') list.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+
   document.getElementById('secTitle').textContent=`파일 목록 (${list.length})`;
-  if(!list.length){ document.getElementById('fileList').innerHTML='<div class="empty"><span class="e-ico">📭</span><p>파일이 없어요</p></div>'; return; }
+  if(!list.length){
+    const msg = curUser.isMaster ? '아직 업로드된 파일이 없어요' : `이 그룹(${esc(curUser.groupCode)})에는 파일이 없어요`;
+    document.getElementById('fileList').innerHTML=`<div class="empty"><span class="e-ico">📭</span><p>${msg}</p><p style="margin-top:.5rem;font-size:.78rem">파일을 업로드해보세요!</p></div>`;
+    return;
+  }
   const canDel=a=>admin||a.uploader===curUser.id;
   document.getElementById('fileList').innerHTML=list.map(a=>`
     <div class="file-item" id="fi_${a.id}">
       <div class="file-ico">${fileIcon(a.name)}</div>
       <div class="file-meta">
-        <div class="file-name">${esc(a.name)}${admin&&a.uploader!==curUser.id?`<span class="up-tag">${esc(a.nick)}</span>`:''}</div>
+        <div class="file-name">${esc(a.name)}${admin&&a.uploader!==curUser.id?`<span class="up-tag">${esc(a.nick)}</span>`:''}${curUser.isMaster?`<span class="grp-tag">🔑 ${esc(a.groupCode||'?')}</span>`:''}</div>
         <div class="file-sub">${fmt(a.size)} · ${fmtDate(a.date)} · ${esc(a.nick)}</div>
       </div>
       <div class="file-actions">
@@ -578,16 +644,16 @@ async function downloadFile(btn){
   const idx = parseInt(btn.getAttribute('data-idx'));
   const a = allAssets[idx];
   if(!a){ toast('파일을 찾을 수 없어요','err'); return; }
+  // 그룹 권한 체크 (마스터는 전체 접근 가능)
+  if(!curUser.isMaster && normCode(a.groupCode)!==curUser.groupCode){ toast('다른 그룹의 파일이에요','err'); return; }
   toast('다운로드 준비 중... ⏳','info');
   btn.textContent='⏳'; btn.disabled=true;
   try{
-    // Fetch via GitHub API with token to get raw content
     const apiUrl = `${apiBase()}/contents/${a.path}`;
     const r = await fetch(apiUrl, {headers: ghHeaders()});
     if(!r.ok) throw new Error('파일을 불러올 수 없어요 ('+r.status+')');
     const d = await r.json();
-    // d.content is base64
-    const b64 = d.content.replace(/\n/g,'');
+    const b64 = d.content.replace(/\s/g,'');
     const binary = atob(b64);
     const bytes = new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
@@ -613,9 +679,11 @@ async function deleteFile(btn){
   const idx = parseInt(btn.getAttribute('data-idx'));
   const a = allAssets[idx];
   if(!a) return;
+  // 그룹 권한 체크 (마스터는 전체 접근 가능)
+  if(!curUser.isMaster && normCode(a.groupCode)!==curUser.groupCode){ toast('다른 그룹의 파일이에요','err'); return; }
   if(!confirm(`"${a.name}" 을 삭제할까요?`)) return;
   try{
-    // Delete actual file from repo
+    // 1) 실제 파일 삭제
     if(a.path){
       try{
         const chk=await fetch(`${apiBase()}/contents/${a.path}`,{headers:ghHeaders()});
@@ -626,10 +694,10 @@ async function deleteFile(btn){
         }
       }catch(e){}
     }
-    // Update index.json
-    allAssets=allAssets.filter(x=>x.id!==aid);
+    // 2) index.json에서 제거 (★ aid 버그 수정)
+    allAssets=allAssets.filter(x=>x.id!==a.id);
     await updateIndex();
-    const el=document.getElementById('fi_'+aid);
+    const el=document.getElementById('fi_'+a.id);
     if(el){ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }
     updateStats(); renderFiles();
     toast('삭제 완료 🗑️','warn');
@@ -653,6 +721,27 @@ async function updateIndex(){
 function setupUpload(){
   const fi=document.getElementById('fileInput');
   const dz=document.getElementById('dropzone');
+  const h3 = dz.querySelector('h3');
+  const pEl = dz.querySelector('p');
+
+  if(curUser.isMaster){
+    // 마스터 모드: 업로드 비활성화
+    dz.classList.add('disabled-up');
+    h3.textContent = '👑 마스터 모드에서는 업로드할 수 없어요';
+    pEl.innerHTML = '업로드하려면 <b style="color:var(--ac)">🔑 그룹 변경</b> 버튼으로 일반 그룹에 들어가세요';
+    fi.disabled = true;
+    fi.onchange = null;
+    dz.ondragover = e => e.preventDefault();
+    dz.ondragleave = null;
+    dz.ondrop = e => { e.preventDefault(); toast('마스터 모드에서는 업로드 불가 — 그룹 변경 후 시도하세요','warn'); };
+    return;
+  }
+
+  // 일반 모드
+  dz.classList.remove('disabled-up');
+  h3.textContent = '파일 드래그 또는 클릭해서 업로드';
+  pEl.innerHTML = `모든 파일 형식 지원 · 최대 <span id="maxLbl">${fmt((cfg.maxMb||25)*1024*1024)}</span> · <b style="color:var(--ac2)">현재 그룹에 저장됨</b>`;
+  fi.disabled = false;
   fi.onchange=e=>{ if(e.target.files.length) handleFiles(Array.from(e.target.files)); fi.value=''; };
   dz.ondragover=e=>{ e.preventDefault(); dz.classList.add('over'); };
   dz.ondragleave=()=>dz.classList.remove('over');
@@ -685,7 +774,6 @@ async function handleFiles(files){
   for(let i=0;i<tasks.length;i++){
     const t=tasks[i];
     try{
-      // Read file as base64
       t.pct=10; renderProg();
       const base64 = await new Promise((res,rej)=>{
         const r=new FileReader();
@@ -695,11 +783,11 @@ async function handleFiles(files){
       });
       t.pct=40; renderProg();
 
-      // Safe filename: timestamp + original name
       const safeName = Date.now()+'_'+t.file.name.replace(/[^a-zA-Z0-9._\-가-힣]/g,'_');
-      const path = `vault-files/${curUser.id}/${safeName}`;
+      // 그룹별 폴더 분리
+      const safeGroup = curUser.groupCode.replace(/[^a-zA-Z0-9._\-]/g,'_');
+      const path = `vault-files/${safeGroup}/${curUser.id}/${safeName}`;
 
-      // Check if file exists (for sha)
       let sha = null;
       try{
         const chk = await fetch(`${apiBase()}/contents/${path}`,{headers:ghHeaders()});
@@ -708,9 +796,8 @@ async function handleFiles(files){
 
       t.pct=60; renderProg();
 
-      // Upload via Contents API
       const body = {
-        message: `upload: ${t.file.name} by ${curUser.id}`,
+        message: `upload: ${t.file.name} by ${curUser.id} [${curUser.groupCode}]`,
         content: base64,
         branch: 'main'
       };
@@ -731,7 +818,7 @@ async function handleFiles(files){
       const d = await r.json();
       const downloadUrl = d.content.download_url;
 
-      // Save metadata to vault-files/meta.json
+      // ★ groupCode 추가!
       const meta = {
         id: d.content.sha,
         name: t.file.name,
@@ -742,6 +829,7 @@ async function handleFiles(files){
         url: downloadUrl,
         uploader: curUser.id,
         nick: curUser.nick,
+        groupCode: curUser.groupCode,
         date: new Date().toISOString()
       };
       await saveMeta(meta);
@@ -758,7 +846,6 @@ async function handleFiles(files){
 }
 
 async function saveMeta(meta){
-  // Load existing meta list
   let list = [];
   let sha = null;
   try{
@@ -770,8 +857,7 @@ async function saveMeta(meta){
     }
   }catch(e){}
   list.unshift(meta);
-  // Keep max 500 entries
-  if(list.length>500) list=list.slice(0,500);
+  if(list.length>1000) list=list.slice(0,1000);
   const body={message:'meta update',content:btoa(unescape(encodeURIComponent(JSON.stringify(list)))),branch:'main'};
   if(sha) body.sha=sha;
   await fetch(`${apiBase()}/contents/vault-files/index.json`,{method:'PUT',headers:{...ghHeaders(),'Content-Type':'application/json'},body:JSON.stringify(body)});
