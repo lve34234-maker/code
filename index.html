@@ -488,47 +488,89 @@ function setupUpload(){
   dz.ondragleave=()=>dz.classList.remove('over');
   dz.ondrop=e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files.length)handleFiles(Array.from(e.dataTransfer.files));};
 }
+// Uint8Array → base64 (스택 오버플로우 없는 안전한 방식)
+function toBase64(u8){
+  let b64='';
+  const enc='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let i=0;
+  while(i<u8.length-2){
+    b64+=enc[u8[i]>>2]+enc[((u8[i]&3)<<4)|(u8[i+1]>>4)]+enc[((u8[i+1]&15)<<2)|(u8[i+2]>>6)]+enc[u8[i+2]&63];
+    i+=3;
+  }
+  if(i===u8.length-2){b64+=enc[u8[i]>>2]+enc[((u8[i]&3)<<4)|(u8[i+1]>>4)]+enc[(u8[i+1]&15)<<2]+'=';}
+  else if(i===u8.length-1){b64+=enc[u8[i]>>2]+enc[(u8[i]&3)<<4]+'==';}
+  return b64;
+}
+
 async function handleFiles(files){
+  // 토큰 확인
+  if(!cfg.token){
+    toast('❌ 토큰이 없어요! 로그아웃 후 다시 로그인하거나 ⚙️ 토큰 변경을 눌러주세요','err');
+    return;
+  }
   const BLOCKED_EXT=['jpg','jpeg','png','gif','webp','svg','bmp','ico','tiff','tif',
     'mp4','mov','avi','mkv','wmv','flv','webm','m4v','3gp','mpeg','mpg'];
   const max=MAX_MB*1024*1024;
   const up=files.filter(f=>{
     const ext=(f.name||'').split('.').pop().toLowerCase();
     if(BLOCKED_EXT.includes(ext)){toast(`❌ ${f.name}: 이미지/동영상은 업로드 불가!`,'err');return false;}
-    if(f.size>max){toast(`${f.name}: ${MAX_MB}MB 초과!`,'err');return false;}
+    if(f.size>max){toast(`❌ ${f.name}: ${MAX_MB}MB 초과!`,'err');return false;}
     return true;
   });
   if(!up.length)return;
   const area=document.getElementById('progArea');area.classList.remove('hidden');
   const tasks=up.map(f=>({file:f,pct:0,done:false,err:null}));
-  const rp=()=>{area.innerHTML=tasks.map(t=>`<div class="prog-item"><div class="prog-header"><span class="prog-name">${esc(t.file.name)}</span><span class="prog-pct">${t.done?'✓':t.err?'✗':t.pct+'%'}</span></div><div class="pbar"><div class="pbar-fill" style="width:${t.done?100:t.pct}%"></div></div></div>`).join('');};
+  const rp=()=>{area.innerHTML=tasks.map(t=>`<div class="prog-item"><div class="prog-header"><span class="prog-name">${esc(t.file.name)}</span><span class="prog-pct">${t.done?'✓':t.err?`✗ ${t.err}`:t.pct+'%'}</span></div><div class="pbar"><div class="pbar-fill" style="width:${t.done?100:t.pct}%"></div></div></div>`).join('');};
   rp();let ok=0;
   for(const t of tasks){
     try{
       t.pct=10;rp();
-      const buf=await t.file.arrayBuffer();const u8=new Uint8Array(buf);
-      let bin='';const cs=8192;for(let c=0;c<u8.length;c+=cs)bin+=String.fromCharCode(...u8.subarray(c,c+cs));
-      const b64=btoa(bin);t.pct=40;rp();
-      const ext=t.file.name.includes('.')?'.'+t.file.name.split('.').pop():'';
-      const base=encodeURIComponent(t.file.name.replace(/\.[^.]+$/,'')).replace(/%[0-9A-F]{2}/gi,'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,30)||'file';
-      const safe=Date.now()+'_'+base+ext;
+      const buf=await t.file.arrayBuffer();
+      const u8=new Uint8Array(buf);
+      const b64=toBase64(u8);  // 안전한 base64 변환
+      t.pct=40;rp();
+      const extPart=t.file.name.includes('.')?'.'+t.file.name.split('.').pop():'';
+      const base=t.file.name.replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9가-힣_-]/g,'_').slice(0,20)||'file';
+      const safe=Date.now()+'_'+base+extPart;
       const tKey=curUser.isMaster?'MASTER':curUser.teamKey;
       const path=`vault-files/${tKey}/${safe}`;
       t.pct=60;rp();
-      const ex=await ghGetAPI(path);
-      const body={message:'up: '+t.file.name,content:b64,branch:'main'};
-      if(ex?.sha)body.sha=ex.sha;
-      const r=await fetch(`${apiBase()}/contents/${path}`,{method:'PUT',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok){const d=await r.json();throw new Error(d.message||'실패');}
-      const rd=await r.json();t.pct=85;rp();
-      const meta={id:rd.content.sha,name:t.file.name,safe,path,size:t.file.size,type:t.file.type||'application/octet-stream',uploader:curUser.id,nick:curUser.nick,teamKey:tKey,date:new Date().toISOString()};
+      // 기존 파일 SHA 확인 (같은 이름 있을 때 덮어쓰기용)
+      let sha=null;
+      try{const ex=await ghGetAPI(path);if(ex?.sha)sha=ex.sha;}catch(e){}
+      const body={message:'upload',content:b64,branch:'main'};
+      if(sha)body.sha=sha;
+      t.pct=70;rp();
+      const r=await fetch(`${apiBase()}/contents/${path}`,{
+        method:'PUT',
+        headers:{...ghH(),'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+      });
+      if(!r.ok){
+        let errMsg='업로드 실패 ('+r.status+')';
+        try{const d=await r.json();errMsg=d.message||errMsg;}catch(e){}
+        throw new Error(errMsg);
+      }
+      const rd=await r.json();
+      t.pct=90;rp();
+      const meta={
+        id:rd.content.sha,name:t.file.name,safe,path,
+        size:t.file.size,type:t.file.type||'application/octet-stream',
+        uploader:curUser.id,nick:curUser.nick,teamKey:tKey,
+        date:new Date().toISOString()
+      };
       allFiles.unshift(meta);
-      await ghPut('vault-files/index.json',JSON.stringify(allFiles),'index');
+      // index.json 저장
+      try{await ghPut('vault-files/index.json',JSON.stringify(allFiles),'index');}
+      catch(e){console.warn('index save failed',e);}
       t.done=true;ok++;rp();updateStats();renderFiles();
-    }catch(e){t.err=e.message;rp();toast(`${t.file.name} 실패: ${e.message}`,'err');}
+    }catch(e){
+      t.err=e.message;rp();
+      toast(`❌ ${t.file.name}: ${e.message}`,'err');
+    }
   }
-  setTimeout(()=>{area.classList.add('hidden');area.innerHTML='';},2000);
-  if(ok>0)toast(`${ok}개 업로드 완료! 🎉`);
+  setTimeout(()=>{area.classList.add('hidden');area.innerHTML='';},3000);
+  if(ok>0)toast(`✅ ${ok}개 업로드 완료! 🎉`);
 }
 
 // ── DISTRIBUTE ──
