@@ -246,7 +246,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
 
 <script>
 const REPO_OWNER  = 'lve34234-maker';
-const REPO_NAME   = 'vaultd';
+const REPO_NAME   = 'code';
 const MAX_MB      = 25;    // 청크 1개 최대 크기
 const FILE_MAX_MB = 1024;  // 파일 1개 최대 크기 (1GB)
 const MASTER_KEY  = 'dlgustjr!@34';
@@ -337,8 +337,11 @@ async function showTokenSetup(){
   const cur=loadToken();
   const t=prompt(`토큰 변경\n현재: ${cur?cur.slice(0,8)+'...':'없음'}\n\nghp_ 토큰:`);
   if(!t)return;
-  cfg.token=t.trim();toast('저장 중...','info');
-  await saveTokenToRepo(cfg.token);toast('✅ 저장 완료!');
+  cfg.token=t.trim();
+  saveToken(cfg.token); // 로컬 즉시 저장
+  toast('저장 중...','info');
+  try{ await saveTokenToRepo(cfg.token); }catch(e){}
+  toast('✅ 토큰 저장 완료! 페이지를 새로고침 해주세요');
 }
 
 // ── USERS ──
@@ -832,7 +835,13 @@ async function rmKey(i){
 }
 
 // ── INIT ──
-(async()=>{cfg.token=loadToken();if(!cfg.token){const t=await loadTokenFromRepo();if(t){cfg.token=t;saveToken(t);}}})();
+(async()=>{
+  cfg.token=loadToken();
+  if(!cfg.token){
+    const t=await loadTokenFromRepo();
+    if(t){ cfg.token=t; saveToken(t); }
+  }
+})();
 </script>
 </body>
 </html>
