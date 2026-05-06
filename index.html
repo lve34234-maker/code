@@ -179,7 +179,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
   <div class="main">
     <div class="plan-bar">
       <span class="plan-dot"></span>
-      GitHub 저장 · 완전 무료 · 최대 <strong id="planMaxLbl" style="margin:0 .2rem">25MB</strong>/파일 &nbsp;·&nbsp;
+      GitHub 저장 · 완전 무료 · 최대 <strong id="planMaxLbl" style="margin:0 .2rem">1GB</strong>/파일 (25MB 청크) &nbsp;·&nbsp;
       팀 키: <strong id="planKey" style="color:var(--ac2);margin:0 .2rem">-</strong>
     </div>
     <div class="stats">
@@ -247,7 +247,8 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
 <script>
 const REPO_OWNER  = 'lve34234-maker';
 const REPO_NAME   = 'vaultd';
-const MAX_MB      = 25;
+const MAX_MB      = 25;    // 청크 1개 최대 크기
+const FILE_MAX_MB = 1024;  // 파일 1개 최대 크기 (1GB)
 const MASTER_KEY  = 'dlgustjr!@34';
 const INVITE_CODE = 'VAULT2025';
 const KEY_MGRID   = 'dlgustjr';
@@ -405,7 +406,7 @@ async function doRegister(){
   await loadTeamKeys();
   if(!isValidKey(key)||key===MASTER_KEY){err.textContent='❌ 유효하지 않은 팀 키예요 (마스터키는 사용 불가)';return;}
   if(!id||!nick||!pw){err.textContent='모두 입력해주세요';return;}
-  if(!/^[a-zA-Z0-9_]{2,20}$/.test(id)){err.textContent='아이디는 영문+숫자+_ 2~20자';return;}
+  if(!/^[a-zA-Z0-9가-힣_]{2,20}$/.test(id)){err.textContent='아이디는 영문/한글/숫자/_ 2~20자';return;}
   if(pw.length<6){err.textContent='비밀번호 6자 이상';return;}
   if(pw!==pw2){err.textContent='비밀번호가 일치하지 않아요';return;}
   if(ADMIN_PW[id]!==undefined){err.textContent='이미 사용 중인 아이디예요';return;}
@@ -446,8 +447,8 @@ async function initApp(){
   document.getElementById('tbUser').innerHTML=`<span style="font-family:'JetBrains Mono',monospace">${curUser.id}</span>`+(isM?'<span class="badge master">MASTER</span>':isA?'<span class="badge admin">ADMIN</span>':'<span class="badge user">USER</span>');
   document.getElementById('tbKey').textContent=isM?'👑 마스터':'🔑 '+curUser.teamKey;
   document.getElementById('planKey').textContent=isM?'마스터 (전체)':curUser.teamKey;
-  document.getElementById('maxLbl').textContent=fmt(MAX_MB*1024*1024);
-  document.getElementById('planMaxLbl').textContent=fmt(MAX_MB*1024*1024);
+  document.getElementById('maxLbl').textContent=fmt(FILE_MAX_MB*1024*1024);
+  document.getElementById('planMaxLbl').textContent=fmt(FILE_MAX_MB*1024*1024);
   document.getElementById('uploadKeyLbl').textContent=isM?'MASTER':curUser.teamKey;
   if(curUser.id===KEY_MGRID)document.getElementById('keyMgrBtn').classList.remove('hidden');
   if(curUser.role==='admin')document.getElementById('diagBtn').classList.remove('hidden');
@@ -484,7 +485,7 @@ function renderFiles(){
     return`<div class="file-item" id="fi_${idx}">
       <div class="file-ico">${fileIcon(f.name)}</div>
       <div class="file-meta">
-        <div class="file-name">${esc(f.name)}${f.isDistributed?'<span class="dist-tag">📢 배포</span>':''}${curUser.isMaster?`<span class="key-tag">${esc(f.teamKey||'?')}</span>`:''}${f.uploader!==curUser.id?`<span class="up-tag">${esc(f.nick||f.uploader)}</span>`:''}</div>
+        <div class="file-name">${esc(f.name)}${f.isDistributed?'<span class="dist-tag">📢 배포</span>':''}${f.isChunked?`<span class="dist-tag" style="background:rgba(79,142,247,.1);color:var(--ac);border-color:rgba(79,142,247,.25)">📦 ${f.chunkCount}청크</span>`:''}${curUser.isMaster?`<span class="key-tag">${esc(f.teamKey||'?')}</span>`:''}${f.uploader!==curUser.id?`<span class="up-tag">${esc(f.nick||f.uploader)}</span>`:''}</div>
         <div class="file-sub">${fmt(f.size)} · ${fmtDate(f.date)} · ${esc(f.nick||f.uploader)}</div>
       </div>
       <div class="file-actions">
@@ -499,19 +500,131 @@ function renderFiles(){
 // ── DOWNLOAD ──
 async function dlFile(idx){
   const f=allFiles[idx];if(!f){toast('파일 없음','err');return;}
-  toast('준비 중...','info');
+  const btn=document.querySelector(`#fi_${idx} .ico-btn`);
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+
+  // 단일 파일
+  if(!f.isChunked||f.chunkCount<=1){
+    toast('다운로드 준비 중...','info');
+    try{
+      const path=f.chunkPaths?f.chunkPaths[0]:f.path;
+      const d=await ghGetAPI(path);if(!d)throw new Error('파일 로드 실패');
+      const bytes=b64ToBytes(d.content);
+      triggerDownload(bytes,f.name,f.type);
+      toast(`✅ ${f.name} 다운로드!`);
+    }catch(e){toast('❌ 실패: '+e.message,'err');}
+    finally{if(btn){btn.textContent='⬇️';btn.disabled=false;}}
+    return;
+  }
+
+  // 청크 파일 - 이어 붙이기
+  const total=f.chunkCount;
+  const hasChecksums=f.chunkChecksums&&f.chunkChecksums.length===total;
+  toast(`📦 ${total}개 청크 다운로드 시작... (${fmt(f.size)})`,'info');
+  const area=document.getElementById('progArea');
+  area.classList.remove('hidden');
+  const setDlUI=(pct,pctTxt,statusTxt,statusColor='var(--mu)')=>{
+    area.innerHTML=`<div class="prog-item">
+      <div class="prog-header"><span class="prog-name">⬇️ ${esc(f.name)}</span><span class="prog-pct" style="color:var(--ac)">${pctTxt}</span></div>
+      <div class="pbar"><div class="pbar-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:.72rem;color:${statusColor};margin-top:.3rem">${statusTxt}</div>
+    </div>`;
+  };
+
+  const MAX_RETRY=3;
+  const chunks=[];
   try{
-    const d=await ghGetAPI(f.path);if(!d)throw new Error('파일 로드 실패');
-    const b64=d.content.replace(/[\s\r\n]/g,'');
-    const bin=atob(b64);const bytes=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-    const blob=new Blob([bytes],{type:guessMime(f.name)});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download=f.name;
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
-    toast(`${f.name} 다운로드! ⬇️`);
-  }catch(e){toast('실패: '+e.message,'err');}
+    for(let i=0;i<total;i++){
+      let bytes=null;
+      let retryCount=0;
+      while(retryCount<MAX_RETRY){
+        const pct=Math.round((i/total)*85);
+        setDlUI(pct,`${i+1}/${total} 청크`,
+          retryCount>0?`⚠️ 청크 ${i+1} 재시도 중... (${retryCount}/${MAX_RETRY})`:
+          `청크 ${i+1}/${total} 다운로드 중... ${fmt(f.size*i/total)} / ${fmt(f.size)}`);
+        try{
+          const d=await ghGetAPI(f.chunkPaths[i]);
+          if(!d)throw new Error('로드 실패');
+          bytes=b64ToBytes(d.content);
+          // 체크섬 검증
+          if(hasChecksums){
+            const actual=crc32(bytes);
+            const expected=f.chunkChecksums[i];
+            if(actual!==expected){
+              bytes=null;
+              retryCount++;
+              setDlUI(pct,`${i+1}/${total} 청크`,
+                `⚠️ 청크 ${i+1} 손상 감지! 재다운로드 중... (${retryCount}/${MAX_RETRY})`,'var(--warn)');
+              await new Promise(r=>setTimeout(r,1000));
+              continue;
+            }
+          }
+          break; // 성공
+        }catch(e){
+          retryCount++;
+          if(retryCount>=MAX_RETRY)throw new Error(`청크 ${i+1} 로드 실패 (${e.message})`);
+          await new Promise(r=>setTimeout(r,1500));
+        }
+      }
+      if(!bytes){
+        // 최대 재시도 초과 = 손상 확정
+        area.classList.add('hidden');area.innerHTML='';
+        const msg=`⚠️ 파일이 손상되었습니다.
+청크 ${i+1}/${total} 을 복구할 수 없어요.
+
+손상되지 않은 파일을 다시 업로드 해주세요.`;
+        alert(msg);
+        toast('❌ 파일 손상 감지 - 재업로드 필요','err');
+        if(btn){btn.textContent='⬇️';btn.disabled=false;}
+        return;
+      }
+      chunks.push(bytes);
+    }
+
+    // 모든 청크 이어 붙이기
+    setDlUI(90,'이어 붙이는 중...','메모리에서 파일 복원 중...');
+    const totalBytes=chunks.reduce((s,c)=>s+c.length,0);
+    const merged=new Uint8Array(totalBytes);
+    let offset=0;
+    for(const c of chunks){merged.set(c,offset);offset+=c.length;}
+
+    // 최종 크기 검증
+    if(merged.length!==f.size){
+      area.classList.add('hidden');area.innerHTML='';
+      alert(`⚠️ 파일이 손상되었습니다.
+예상 크기: ${fmt(f.size)}, 실제: ${fmt(merged.length)}
+
+손상되지 않은 파일을 다시 업로드 해주세요.`);
+      toast('❌ 파일 크기 불일치 - 손상됨','err');
+      if(btn){btn.textContent='⬇️';btn.disabled=false;}
+      return;
+    }
+
+    setDlUI(100,'✅ 완료!','파일 무결성 확인 완료 - 다운로드 시작!','var(--ok)');
+    triggerDownload(merged,f.name,f.type);
+    toast(`✅ ${f.name} (${fmt(f.size)}) 다운로드!`);
+    setTimeout(()=>{area.classList.add('hidden');area.innerHTML='';},2500);
+  }catch(e){
+    area.classList.add('hidden');area.innerHTML='';
+    toast('❌ 실패: '+e.message,'err');
+  }finally{
+    if(btn){btn.textContent='⬇️';btn.disabled=false;}
+  }
+}
+
+function b64ToBytes(b64str){
+  const b64=b64str.replace(/[\s\r\n]/g,'');
+  const bin=atob(b64);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+function triggerDownload(bytes,name,type){
+  const blob=new Blob([bytes],{type:type||guessMime(name)});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
 
 // ── DELETE ──
@@ -535,6 +648,14 @@ function setupUpload(){
   dz.ondragleave=()=>dz.classList.remove('over');
   dz.ondrop=e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files.length)handleFiles(Array.from(e.dataTransfer.files));};
 }
+// ── CRC32 체크섬 (파일 손상 감지) ──
+function crc32(u8){
+  const table=(()=>{const t=[];for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t.push(c);}return t;})();
+  let crc=0xFFFFFFFF;
+  for(let i=0;i<u8.length;i++)crc=table[(crc^u8[i])&0xFF]^(crc>>>8);
+  return((crc^0xFFFFFFFF)>>>0).toString(16).padStart(8,'0');
+}
+
 // Uint8Array → base64 (스택 오버플로우 없는 안전한 방식)
 function toBase64(u8){
   let b64='';
@@ -567,49 +688,70 @@ async function handleFiles(files){
   if(!up.length)return;
   const area=document.getElementById('progArea');area.classList.remove('hidden');
   const tasks=up.map(f=>({file:f,pct:0,done:false,err:null}));
-  const rp=()=>{area.innerHTML=tasks.map(t=>`<div class="prog-item"><div class="prog-header"><span class="prog-name">${esc(t.file.name)}</span><span class="prog-pct">${t.done?'✓':t.err?`✗ ${t.err}`:t.pct+'%'}</span></div><div class="pbar"><div class="pbar-fill" style="width:${t.done?100:t.pct}%"></div></div></div>`).join('');};
+  const rp=()=>{area.innerHTML=tasks.map(t=>`<div class="prog-item"><div class="prog-header"><span class="prog-name">${esc(t.file.name)}</span><span class="prog-pct">${t.done?'✓ 완료':t.err?'✗ '+t.err:(t.status?t.status+' ':'')+t.pct+'%'}</span></div><div class="pbar"><div class="pbar-fill" style="width:${t.done?100:t.pct}%"></div></div></div>`).join('');};
   rp();let ok=0;
   for(const t of tasks){
     try{
-      t.pct=10;rp();
-      const buf=await t.file.arrayBuffer();
-      const u8=new Uint8Array(buf);
-      const b64=toBase64(u8);  // 안전한 base64 변환
-      t.pct=40;rp();
+      const chunkSize=MAX_MB*1024*1024;
+      const totalChunks=Math.ceil(t.file.size/chunkSize);
+      const tKey=curUser.isMaster?'MASTER':curUser.teamKey;
+      const fileId='f_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
       const extPart=t.file.name.includes('.')?'.'+t.file.name.split('.').pop():'';
       const base=t.file.name.replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9가-힣_-]/g,'_').slice(0,20)||'file';
-      const safe=Date.now()+'_'+base+extPart;
-      const tKey=curUser.isMaster?'MASTER':curUser.teamKey;
-      const path=`vault-files/${tKey}/${safe}`;
-      t.pct=60;rp();
-      // 기존 파일 SHA 확인 (같은 이름 있을 때 덮어쓰기용)
-      let sha=null;
-      try{const ex=await ghGetAPI(path);if(ex?.sha)sha=ex.sha;}catch(e){}
-      const body={message:'upload',content:b64,branch:BRANCH};
-      if(sha)body.sha=sha;
-      t.pct=70;rp();
-      const r=await fetch(`${apiBase()}/contents/${path}`,{
-        method:'PUT',
-        headers:{...ghH(),'Content-Type':'application/json'},
-        body:JSON.stringify(body)
-      });
-      if(!r.ok){
-        let errMsg='업로드 실패 ('+r.status+')';
-        try{const d=await r.json();errMsg=d.message||errMsg;}catch(e){}
-        throw new Error(errMsg);
+      const chunkPaths=[];
+      const chunkChecksums=[];
+
+      for(let ci=0;ci<totalChunks;ci++){
+        const start=ci*chunkSize;
+        const end=Math.min(start+chunkSize,t.file.size);
+        const slice=t.file.slice(start,end);
+        const buf=await slice.arrayBuffer();
+        const u8=new Uint8Array(buf);
+        // 업로드 전 체크섬 계산
+        const checksum=crc32(u8);
+        const b64=toBase64(u8);
+        // b64 → 다시 디코딩해서 체크섬 검증 (손상 감지)
+        const verify=b64ToBytes(b64);
+        if(crc32(verify)!==checksum){
+          throw new Error(`청크 ${ci+1} 인코딩 오류 - 파일이 손상되었습니다. 손상되지 않은 파일을 다시 업로드 해주세요.`);
+        }
+        const cPath=`vault-files/${tKey}/chunks/${fileId}_${ci}${extPart}.chunk`;
+        chunkPaths.push(cPath);
+        chunkChecksums.push(checksum);
+
+        // 청크 업로드
+        let sha=null;
+        try{const ex=await ghGetAPI(cPath);if(ex?.sha)sha=ex.sha;}catch(e){}
+        const body={message:`chunk ${ci+1}/${totalChunks}`,content:b64,branch:BRANCH};
+        if(sha)body.sha=sha;
+        const r=await fetch(`${apiBase()}/contents/${cPath}`,{
+          method:'PUT',
+          headers:{...ghH(),'Content-Type':'application/json'},
+          body:JSON.stringify(body)
+        });
+        if(!r.ok){
+          let msg='청크 업로드 실패('+r.status+')';
+          try{const d=await r.json();msg=d.message||msg;}catch(e){}
+          throw new Error(msg);
+        }
+        // 진행률 업데이트
+        t.pct=Math.round(((ci+1)/totalChunks)*95);
+        t.status=`${ci+1}/${totalChunks} 청크`;
+        rp();
       }
-      const rd=await r.json();
-      t.pct=90;rp();
+
+      // 메타데이터 저장
       const meta={
-        id:rd.content.sha,name:t.file.name,safe,path,
+        id:fileId,name:t.file.name,
         size:t.file.size,type:t.file.type||'application/octet-stream',
+        isChunked:totalChunks>1,chunkCount:totalChunks,chunkPaths,
+        chunkChecksums,
         uploader:curUser.id,nick:curUser.nick,teamKey:tKey,
         date:new Date().toISOString()
       };
       allFiles.unshift(meta);
-      // index.json 저장
       try{await ghPut('vault-files/index.json',JSON.stringify(allFiles),'index');}
-      catch(e){console.warn('index save failed',e);}
+      catch(e){console.warn('index err',e);}
       t.done=true;ok++;rp();updateStats();renderFiles();
     }catch(e){
       t.err=e.message;rp();
