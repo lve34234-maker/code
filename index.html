@@ -171,6 +171,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
     </div>
     <div class="tb-right">
       <button class="tbtn special hidden" id="keyMgrBtn" onclick="openKeyManager()">🗝️ 키 관리</button>
+      <button class="tbtn hidden" id="diagBtn" onclick="runDiagnostic()" title="업로드 안 될 때 눌러요">🔍 진단</button>
       <button class="tbtn" onclick="loadFiles()">↺</button>
       <button class="tbtn danger" onclick="doLogout()">로그아웃</button>
     </div>
@@ -253,8 +254,10 @@ const KEY_MGRID   = 'dlgustjr';
 const ADMIN_PW    = {dlgustjr:'dlgustjr!@34', admin:'admin!@34'};
 const TOKEN_KEY   = 'vault_tk';
 const USERS_KEY   = 'vault_us';
+const BRANCH_KEY  = 'vault_br';
 
 let cfg = {owner:REPO_OWNER,repo:REPO_NAME,maxMb:MAX_MB,token:''};
+let BRANCH = localStorage.getItem(BRANCH_KEY)||'main';
 let curUser = null;
 let allFiles = [];
 let teamKeys = [];
@@ -275,12 +278,51 @@ async function ghRaw(path){try{const r=await fetch(`https://raw.githubuserconten
 async function ghGetAPI(path){try{const r=await fetch(`${apiBase()}/contents/${path}`,{headers:ghH()});if(!r.ok)return null;return await r.json();}catch(e){return null;}}
 async function ghPut(path,content,msg){
   const ex=await ghGetAPI(path);
-  const body={message:msg,content:btoa(unescape(encodeURIComponent(content))),branch:'main'};
+  const body={message:msg,content:btoa(unescape(encodeURIComponent(content))),branch:BRANCH};
   if(ex?.sha)body.sha=ex.sha;
   const r=await fetch(`${apiBase()}/contents/${path}`,{method:'PUT',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify(body)});
   return r.ok;
 }
-async function ghDel(path,msg){const ex=await ghGetAPI(path);if(!ex?.sha)return true;const r=await fetch(`${apiBase()}/contents/${path}`,{method:'DELETE',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify({message:msg,sha:ex.sha,branch:'main'})});return r.ok||r.status===204;}
+async function ghDel(path,msg){const ex=await ghGetAPI(path);if(!ex?.sha)return true;const r=await fetch(`${apiBase()}/contents/${path}`,{method:'DELETE',headers:{...ghH(),'Content-Type':'application/json'},body:JSON.stringify({message:msg,sha:ex.sha,branch:BRANCH})});return r.ok||r.status===204;}
+
+// ── BRANCH AUTO-DETECT ──
+async function detectBranch(){
+  // Try main first
+  let r = await fetch(`${apiBase()}/git/refs/heads/main`,{headers:ghH()});
+  if(r.ok){ BRANCH='main'; localStorage.setItem(BRANCH_KEY,'main'); return 'main'; }
+  // Try master
+  r = await fetch(`${apiBase()}/git/refs/heads/master`,{headers:ghH()});
+  if(r.ok){ BRANCH='master'; localStorage.setItem(BRANCH_KEY,'master'); return 'master'; }
+  // Get default branch from repo info
+  r = await fetch(`${apiBase()}`,{headers:ghH()});
+  if(r.ok){ const d=await r.json(); BRANCH=d.default_branch||'main'; localStorage.setItem(BRANCH_KEY,BRANCH); return BRANCH; }
+  return BRANCH;
+}
+
+async function runDiagnostic(){
+  const lines=[];
+  // 1. Token check
+  if(!cfg.token){ lines.push('❌ 토큰 없음 → ⚙️ 토큰 변경 누르세요'); showDiagResult(lines); return; }
+  lines.push('✅ 토큰 있음: '+cfg.token.slice(0,8)+'...');
+  // 2. Repo access
+  try{
+    const r=await fetch(`${apiBase()}`,{headers:ghH()});
+    if(!r.ok){ lines.push('❌ 레포 접근 실패 ('+r.status+') → 토큰에 repo 권한이 있는지 확인'); showDiagResult(lines); return; }
+    const d=await r.json();
+    lines.push('✅ 레포 확인: '+d.full_name+' ('+d.visibility+')');
+    lines.push('📌 기본 브랜치: '+d.default_branch);
+    BRANCH=d.default_branch; localStorage.setItem(BRANCH_KEY,BRANCH);
+  }catch(e){ lines.push('❌ 네트워크 오류: '+e.message); showDiagResult(lines); return; }
+  // 3. Write test
+  try{
+    const ok=await ghPut('vault-files/.test','ok','test');
+    lines.push(ok?'✅ 파일 쓰기 성공!':'❌ 파일 쓰기 실패 → 토큰 권한 확인');
+  }catch(e){ lines.push('❌ 쓰기 오류: '+e.message); }
+  showDiagResult(lines);
+}
+function showDiagResult(lines){
+  alert('🔍 진단 결과\n\n'+lines.join('\n'));
+}
 
 // ── TOKEN ──
 function loadToken(){return localStorage.getItem(TOKEN_KEY)||'';}
@@ -390,6 +432,10 @@ function doLogout(){
 async function initApp(){
   cfg.token=loadToken();
   if(!cfg.token){toast('토큰 동기화 중...','info');const t=await loadTokenFromRepo();if(t){cfg.token=t;saveToken(t);}}
+  if(cfg.token){
+    // 브랜치 자동 감지
+    await detectBranch();
+  }
   if(curUser.role==='admin'&&!cfg.token){
     const t=prompt('👑 GitHub 토큰(ghp_...)을 입력하세요 (최초 1회):');
     if(t&&t.trim()){cfg.token=t.trim();await saveTokenToRepo(cfg.token);}
@@ -404,6 +450,7 @@ async function initApp(){
   document.getElementById('planMaxLbl').textContent=fmt(MAX_MB*1024*1024);
   document.getElementById('uploadKeyLbl').textContent=isM?'MASTER':curUser.teamKey;
   if(curUser.id===KEY_MGRID)document.getElementById('keyMgrBtn').classList.remove('hidden');
+  if(curUser.role==='admin')document.getElementById('diagBtn').classList.remove('hidden');
   loadFiles();setupUpload();
 }
 
@@ -538,7 +585,7 @@ async function handleFiles(files){
       // 기존 파일 SHA 확인 (같은 이름 있을 때 덮어쓰기용)
       let sha=null;
       try{const ex=await ghGetAPI(path);if(ex?.sha)sha=ex.sha;}catch(e){}
-      const body={message:'upload',content:b64,branch:'main'};
+      const body={message:'upload',content:b64,branch:BRANCH};
       if(sha)body.sha=sha;
       t.pct=70;rp();
       const r=await fetch(`${apiBase()}/contents/${path}`,{
