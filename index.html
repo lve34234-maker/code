@@ -89,6 +89,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
 .ico-btn.del:hover{border-color:var(--err);color:var(--err)}
 .up-tag{font-size:.6rem;padding:.07rem .3rem;border-radius:4px;background:rgba(79,142,247,.1);color:var(--ac);border:1px solid rgba(79,142,247,.18);margin-left:.3rem;font-family:'JetBrains Mono',monospace;vertical-align:middle;display:inline-block}
 .key-tag{font-size:.6rem;padding:.07rem .3rem;border-radius:4px;background:rgba(124,90,247,.1);color:var(--ac2);border:1px solid rgba(124,90,247,.18);margin-left:.3rem;font-family:'JetBrains Mono',monospace;vertical-align:middle;display:inline-block}
+.dist-tag{font-size:.6rem;padding:.07rem .3rem;border-radius:4px;background:rgba(79,247,160,.1);color:var(--ok);border:1px solid rgba(79,247,160,.25);margin-left:.3rem;font-family:'JetBrains Mono',monospace;vertical-align:middle;display:inline-block}
 .empty{text-align:center;padding:2.5rem 1rem;color:var(--mu)}
 .empty .e-ico{font-size:2.2rem;display:block;margin-bottom:.65rem;opacity:.3}
 .loading{display:flex;align-items:center;justify-content:center;padding:2.5rem;gap:.5rem;color:var(--mu);font-size:.83rem}
@@ -221,6 +222,22 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
     </div>
     <div class="lerr" id="keyErr" style="margin-top:.5rem"></div>
     <button class="btn-close" onclick="closeKeyManager()">닫기</button>
+  </div>
+</div>
+
+<!-- ══ DIST MODAL ══ -->
+<div class="modal-bg hidden" id="distModal">
+  <div class="modal">
+    <h3>📢 파일 배포</h3>
+    <p style="font-size:.8rem;color:var(--mu);margin-bottom:1rem">선택한 팀에 이 파일을 배포해요.<br>배포된 파일은 해당 팀 모두가 볼 수 있어요.</p>
+    <div id="distFileName" style="font-size:.85rem;font-weight:600;margin-bottom:1rem;padding:.5rem .75rem;background:var(--s2);border-radius:8px;border:1px solid var(--br)"></div>
+    <div style="font-size:.75rem;color:var(--mu);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em">배포 대상</div>
+    <div id="distKeyList" style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem"></div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn-add" style="flex:1" onclick="doDistribute()">📢 배포하기</button>
+      <button class="btn-close" style="margin:0;flex:1" onclick="closeDistModal()">취소</button>
+    </div>
+    <div class="lerr" id="distErr" style="margin-top:.5rem"></div>
   </div>
 </div>
 
@@ -396,7 +413,7 @@ async function loadFiles(){
   try{const txt=await ghRaw('vault-files/index.json');allFiles=txt?JSON.parse(txt):[];updateStats();renderFiles();}
   catch(e){document.getElementById('fileList').innerHTML=`<div class="empty"><span class="e-ico">⚠️</span><p>${esc(e.message)}</p></div>`;}
 }
-function visible(){return curUser.isMaster?allFiles:allFiles.filter(f=>f.teamKey===curUser.teamKey);}
+function visible(){if(curUser.isMaster)return allFiles;return allFiles.filter(f=>f.teamKey===curUser.teamKey||f.teamKey==='__ALL__');}
 function updateStats(){
   const v=visible(),mine=v.filter(f=>f.uploader===curUser.id);
   document.getElementById('statMine').textContent=mine.length;
@@ -420,11 +437,12 @@ function renderFiles(){
     return`<div class="file-item" id="fi_${idx}">
       <div class="file-ico">${fileIcon(f.name)}</div>
       <div class="file-meta">
-        <div class="file-name">${esc(f.name)}${curUser.isMaster?`<span class="key-tag">${esc(f.teamKey||'?')}</span>`:''}${f.uploader!==curUser.id?`<span class="up-tag">${esc(f.nick||f.uploader)}</span>`:''}</div>
+        <div class="file-name">${esc(f.name)}${f.isDistributed?'<span class="dist-tag">📢 배포</span>':''}${curUser.isMaster?`<span class="key-tag">${esc(f.teamKey||'?')}</span>`:''}${f.uploader!==curUser.id?`<span class="up-tag">${esc(f.nick||f.uploader)}</span>`:''}</div>
         <div class="file-sub">${fmt(f.size)} · ${fmtDate(f.date)} · ${esc(f.nick||f.uploader)}</div>
       </div>
       <div class="file-actions">
         <button class="ico-btn" onclick="dlFile(${idx})">⬇️</button>
+        ${curUser.role==='admin'&&!f.isDistributed?`<button class="ico-btn" onclick="openDistModal(${idx})" title="배포" style="font-size:.75rem">📢</button>`:''}
         ${canDel(f)?`<button class="ico-btn del" onclick="delFile(${idx})">🗑️</button>`:''}
       </div>
     </div>`;
@@ -471,8 +489,15 @@ function setupUpload(){
   dz.ondrop=e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files.length)handleFiles(Array.from(e.dataTransfer.files));};
 }
 async function handleFiles(files){
+  const BLOCKED_EXT=['jpg','jpeg','png','gif','webp','svg','bmp','ico','tiff','tif',
+    'mp4','mov','avi','mkv','wmv','flv','webm','m4v','3gp','mpeg','mpg'];
   const max=MAX_MB*1024*1024;
-  const up=files.filter(f=>{if(f.size>max){toast(`${f.name}: ${MAX_MB}MB 초과!`,'err');return false;}return true;});
+  const up=files.filter(f=>{
+    const ext=(f.name||'').split('.').pop().toLowerCase();
+    if(BLOCKED_EXT.includes(ext)){toast(`❌ ${f.name}: 이미지/동영상은 업로드 불가!`,'err');return false;}
+    if(f.size>max){toast(`${f.name}: ${MAX_MB}MB 초과!`,'err');return false;}
+    return true;
+  });
   if(!up.length)return;
   const area=document.getElementById('progArea');area.classList.remove('hidden');
   const tasks=up.map(f=>({file:f,pct:0,done:false,err:null}));
@@ -505,6 +530,50 @@ async function handleFiles(files){
   setTimeout(()=>{area.classList.add('hidden');area.innerHTML='';},2000);
   if(ok>0)toast(`${ok}개 업로드 완료! 🎉`);
 }
+
+// ── DISTRIBUTE ──
+let distTargetIdx = null;
+function openDistModal(idx){
+  distTargetIdx=idx;
+  const f=allFiles[idx];
+  document.getElementById('distFileName').textContent='📄 '+f.name;
+  document.getElementById('distErr').textContent='';
+  // Build team key checkboxes
+  const kl=document.getElementById('distKeyList');
+  const options=[{key:'__ALL__',desc:'전체 팀 (모든 팀에 배포)'},...teamKeys];
+  kl.innerHTML=options.map(k=>`
+    <label style="display:flex;align-items:center;gap:.6rem;background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:.5rem .75rem;cursor:pointer;font-size:.83rem">
+      <input type="checkbox" value="${esc(k.key)}" style="width:15px;height:15px;accent-color:var(--ac2)"/>
+      <span style="font-family:'JetBrains Mono',monospace;color:var(--ac2)">${esc(k.key==='__ALL__'?'📢 전체':k.key)}</span>
+      ${k.desc?`<span style="color:var(--mu);font-size:.72rem">${esc(k.desc)}</span>`:''}
+    </label>`).join('');
+  document.getElementById('distModal').classList.remove('hidden');
+}
+function closeDistModal(){document.getElementById('distModal').classList.add('hidden');distTargetIdx=null;}
+async function doDistribute(){
+  const err=document.getElementById('distErr');err.textContent='';
+  const checked=[...document.querySelectorAll('#distKeyList input:checked')].map(x=>x.value);
+  if(!checked.length){err.textContent='배포 대상을 선택해주세요';return;}
+  const src=allFiles[distTargetIdx];
+  if(!src){closeDistModal();return;}
+  const targets=checked.includes('__ALL__')?['__ALL__']:checked;
+  let added=0;
+  for(const tKey of targets){
+    // Skip if already distributed to this key
+    const exists=allFiles.find(f=>f.isDistributed&&f.srcId===src.id&&f.teamKey===tKey);
+    if(exists) continue;
+    const meta={...src,id:src.id+'_dist_'+tKey,teamKey:tKey,isDistributed:true,srcId:src.id,
+      distBy:curUser.id,distDate:new Date().toISOString()};
+    allFiles.unshift(meta);added++;
+  }
+  if(added===0){err.textContent='이미 배포된 파일이에요';return;}
+  await ghPut('vault-files/index.json',JSON.stringify(allFiles),'dist');
+  closeDistModal();updateStats();renderFiles();
+  toast(`${added}개 팀에 배포 완료! 📢`);
+}
+
+// Patch visible() to include __ALL__ distributed files
+const _origVisible=visible;
 
 // ── KEY MANAGER ──
 function openKeyManager(){renderKeyList();document.getElementById('keyModal').classList.remove('hidden');}
