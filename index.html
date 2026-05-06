@@ -171,6 +171,7 @@ html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:'Not
     </div>
     <div class="tb-right">
       <button class="tbtn special hidden" id="keyMgrBtn" onclick="openKeyManager()">🗝️ 키 관리</button>
+      <button class="tbtn hidden" id="tokenBtn" onclick="showTokenSetup()" title="토큰 변경">🔑 토큰</button>
       <button class="tbtn hidden" id="diagBtn" onclick="runDiagnostic()" title="업로드 안 될 때 눌러요">🔍 진단</button>
       <button class="tbtn" onclick="loadFiles()">↺</button>
       <button class="tbtn danger" onclick="doLogout()">로그아웃</button>
@@ -302,22 +303,37 @@ async function detectBranch(){
 
 async function runDiagnostic(){
   const lines=[];
-  // 1. Token check
-  if(!cfg.token){ lines.push('❌ 토큰 없음 → ⚙️ 토큰 변경 누르세요'); showDiagResult(lines); return; }
-  lines.push('✅ 토큰 있음: '+cfg.token.slice(0,8)+'...');
-  // 2. Repo access
+  if(!cfg.token){ lines.push('❌ 토큰 없음'); showDiagResult(lines); return; }
+  lines.push('✅ 토큰: '+cfg.token.slice(0,8)+'...');
+
+  // 1. 토큰 주인 확인 (핵심!)
+  try{
+    const r=await fetch('https://api.github.com/user',{headers:ghH()});
+    if(!r.ok){ lines.push('❌ 토큰 인증 실패 ('+r.status+') → 토큰이 만료됐거나 잘못됐어요'); showDiagResult(lines); return; }
+    const u=await r.json();
+    lines.push('👤 토큰 계정: '+u.login);
+    if(u.login.toLowerCase()!==REPO_OWNER.toLowerCase()){
+      lines.push('⚠️ 경고: 토큰 계정('+u.login+')이 레포 소유자('+REPO_OWNER+')와 달라요!');
+      lines.push('→ '+REPO_OWNER+' 계정으로 로그인해서 토큰을 새로 발급하세요!');
+      showDiagResult(lines); return;
+    }
+    lines.push('✅ 계정 일치!');
+  }catch(e){ lines.push('❌ 오류: '+e.message); showDiagResult(lines); return; }
+
+  // 2. 레포 접근
   try{
     const r=await fetch(`${apiBase()}`,{headers:ghH()});
-    if(!r.ok){ lines.push('❌ 레포 접근 실패 ('+r.status+') → 토큰에 repo 권한이 있는지 확인'); showDiagResult(lines); return; }
+    if(!r.ok){ lines.push('❌ 레포 접근 실패 ('+r.status+')'); showDiagResult(lines); return; }
     const d=await r.json();
-    lines.push('✅ 레포 확인: '+d.full_name+' ('+d.visibility+')');
-    lines.push('📌 기본 브랜치: '+d.default_branch);
+    lines.push('✅ 레포: '+d.full_name+' ('+d.visibility+')');
     BRANCH=d.default_branch; localStorage.setItem(BRANCH_KEY,BRANCH);
-  }catch(e){ lines.push('❌ 네트워크 오류: '+e.message); showDiagResult(lines); return; }
-  // 3. Write test
+    lines.push('📌 브랜치: '+BRANCH);
+  }catch(e){ lines.push('❌ 레포 오류: '+e.message); showDiagResult(lines); return; }
+
+  // 3. 쓰기 테스트
   try{
     const ok=await ghPut('vault-files/.test','ok','test');
-    lines.push(ok?'✅ 파일 쓰기 성공!':'❌ 파일 쓰기 실패 → 토큰 권한 확인');
+    lines.push(ok?'✅ 파일 쓰기 성공! 업로드 가능해요 🎉':'❌ 쓰기 실패');
   }catch(e){ lines.push('❌ 쓰기 오류: '+e.message); }
   showDiagResult(lines);
 }
@@ -454,7 +470,10 @@ async function initApp(){
   document.getElementById('planMaxLbl').textContent=fmt(FILE_MAX_MB*1024*1024);
   document.getElementById('uploadKeyLbl').textContent=isM?'MASTER':curUser.teamKey;
   if(curUser.id===KEY_MGRID)document.getElementById('keyMgrBtn').classList.remove('hidden');
-  if(curUser.role==='admin')document.getElementById('diagBtn').classList.remove('hidden');
+  if(curUser.role==='admin'){
+    document.getElementById('diagBtn').classList.remove('hidden');
+    document.getElementById('tokenBtn').classList.remove('hidden');
+  }
   loadFiles();setupUpload();
 }
 
